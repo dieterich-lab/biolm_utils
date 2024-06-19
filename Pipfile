@@ -1,0 +1,13 @@
+[packages]
+transformers = "*"
+torch = "*"
+torchvision = "*"
+torchaudio = "*"
+pandas = "*"
+ferret-xai = "*"
+accelerate = "*"
+
+[dev-packages]
+debugpy = "*"
+tensorboard = "*"
+torch-tb-profiler = "*"
