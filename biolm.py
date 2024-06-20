@@ -4,17 +4,7 @@ import random
 
 import numpy as np
 import torch
-from transformers import (
-    DataCollatorForLanguageModeling,
-    DataCollatorForPermutationLanguageModeling,
-    DataCollatorWithPadding,
-    DefaultDataCollator,
-    TrainerState,
-    TrainingArguments,
-)
-
 from cross_validation import cv_wrapper
-from entry import *
 from interpret import loo_scores
 from train_tokenizer import tokenize
 from train_utils import (
@@ -25,6 +15,16 @@ from train_utils import (
     get_tokenizer,
     get_trainer,
 )
+from transformers import (
+    DataCollatorForLanguageModeling,
+    DataCollatorForPermutationLanguageModeling,
+    DataCollatorWithPadding,
+    DefaultDataCollator,
+    TrainerState,
+    TrainingArguments,
+)
+
+from entry import *
 
 np.random.seed(0)
 random.seed(0)
@@ -42,7 +42,9 @@ if args.mode != "tokenize":
     TOKENIZER_CLS = TOKENIZERDICT[args.model]
     TOKENIZER = get_tokenizer(args, TOKENIZERFILE, TOKENIZER_CLS)
     TOKENIZER_FOR_TRAINER = (
-        TOKENIZER if SPECIAL_TOKENIZER_FOR_TRAINER is None else SPECIAL_TOKENIZER_FOR_TRAINER
+        TOKENIZER
+        if SPECIAL_TOKENIZER_FOR_TRAINER is None
+        else SPECIAL_TOKENIZER_FOR_TRAINER
     )
     DATASET_CLS = DATASETDICT[args.model]
     DATASET = get_data(args, TOKENIZER, ADD_SPECIAL_TOKENS, DATASETFILE, DATASET_CLS)

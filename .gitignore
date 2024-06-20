@@ -12,8 +12,6 @@ logs/
 data/
 test/
 resources/
-_*/
-_*
 notebooks/
 .vscode
 
