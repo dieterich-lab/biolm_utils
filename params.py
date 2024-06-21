@@ -302,13 +302,6 @@ def parse_args(*args):
         default=None,
         help="Path to the a config file that will overrule CLI arguments.",
     )
-    parser.add_argument(
-        "--model",
-        type=str,
-        choices=[],
-        help="Employed model.",
-    )
-
     if args:
         params = parser.parse_args(*args)
     else:

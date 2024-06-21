@@ -10,14 +10,12 @@ from train_tokenizer import tokenize
 from train_utils import (
     compute_metrics_for_regression,
     create_reports,
-    get_data,
+    get_dataset,
     get_model,
     get_tokenizer,
     get_trainer,
 )
 from transformers import (
-    DataCollatorForLanguageModeling,
-    DataCollatorForPermutationLanguageModeling,
     DataCollatorWithPadding,
     DefaultDataCollator,
     TrainerState,
@@ -39,17 +37,18 @@ print(f"Random seed set as {0}")
 
 
 if args.mode != "tokenize":
-    TOKENIZER_CLS = TOKENIZERDICT[args.model]
     TOKENIZER = get_tokenizer(args, TOKENIZERFILE, TOKENIZER_CLS)
     TOKENIZER_FOR_TRAINER = (
         TOKENIZER
-        if SPECIAL_TOKENIZER_FOR_TRAINER is None
-        else SPECIAL_TOKENIZER_FOR_TRAINER
+        if SPECIAL_TOKENIZER_FOR_TRAINER_CLS is None
+        else SPECIAL_TOKENIZER_FOR_TRAINER_CLS()
     )
-    DATASET_CLS = DATASETDICT[args.model]
-    DATASET = get_data(args, TOKENIZER, ADD_SPECIAL_TOKENS, DATASETFILE, DATASET_CLS)
+    DATASET_CLS = DATASET_CLS
+    DATASET_CLS = get_dataset(
+        args, TOKENIZER, ADD_SPECIAL_TOKENS, DATASETFILE, DATASET_CLS
+    )
 else:
-    DATASET = None
+    DATASET_CLS = None
     TOKENIZER = None
 
 
@@ -64,7 +63,7 @@ def train(
 ):
 
     # Get the trainer class.
-    trainer_cls = MLMTRAINER if args.mode == "pre-train" else REGRESSIONTRAINER
+    trainer_cls = MLMTRAINER_CLS if args.mode == "pre-train" else REGRESSIONTRAINER_CLS
 
     # Determine the output size of the network.
     if args.mode == "pre-train":
@@ -77,7 +76,7 @@ def train(
         args=args,
         config_cls=CONFIGCLS,
         tokenizer=tokenizer,
-        dataset=DATASET,
+        dataset=DATASET_CLS,
         nlabels=nlabels,
     )
 
@@ -185,7 +184,7 @@ def train(
 
 def test(test_dataset, data_collator, model_load_path, model_cls=None, model=None):
     # Get the trainer class.
-    trainer_cls = REGRESSIONTRAINER
+    trainer_cls = REGRESSIONTRAINER_CLS
 
     nlabels = 1
 
@@ -195,11 +194,17 @@ def test(test_dataset, data_collator, model_load_path, model_cls=None, model=Non
             args=args,
             config_cls=CONFIGCLS,
             tokenizer=TOKENIZER,
-            dataset=DATASET,
+            dataset=DATASET_CLS,
             nlabels=nlabels,
         )
         model = get_model(
-            args, model_cls, TOKENIZER, config, model_load_path, nlabels, test_dataset
+            args,
+            model_cls,
+            TOKENIZER,
+            config,
+            model_load_path,
+            nlabels,
+            test_dataset,
         )
 
     # Define the test arguments.
@@ -242,7 +247,7 @@ def test(test_dataset, data_collator, model_load_path, model_cls=None, model=Non
         return test_results.metrics["test_spearman rho"]
 
 
-@cv_wrapper(args, DATASET)
+@cv_wrapper(args, DATASET_CLS)
 def run(train_dataset, val_dataset, test_dataset, model_load_path, model_save_path):
 
     if args.mode == "tokenize":
@@ -250,25 +255,18 @@ def run(train_dataset, val_dataset, test_dataset, model_load_path, model_save_pa
     else:
         # Get the correct model class.
         if args.mode == "pre-train":
-            model_cls = MODELDICT["pre-train"][args.model]
+            model_cls = MODELCLS
         else:
-            model_cls = MODELDICT["fine-tune"][args.model]
+            model_cls = MODELCLS
 
         # Getting the corresponding data collator.
         if args.mode == "pre-train":
-            if args.model == "xlnet":
-                data_collator = DataCollatorForPermutationLanguageModeling(
-                    tokenizer=TOKENIZER
-                )
-            else:
-                data_collator = DataCollatorForLanguageModeling(
-                    tokenizer=TOKENIZER, mlm=True, mlm_probability=0.15
-                )
+            data_collator = DATACOLLATOR_CLS_FOR_PRETRAINING(tokenizer=TOKENIZER)
         elif args.mode in ["fine-tune", "predict"]:
-            if args.model == "xlnet":
-                data_collator = DataCollatorWithPadding(tokenizer=TOKENIZER)
-            else:
-                data_collator = DefaultDataCollator()
+            # if args.model == "xlnet":
+            #     data_collator = DataCollatorWithPadding(tokenizer=TOKENIZER)
+            # else:
+            data_collator = DefaultDataCollator()
         # Pre-training and fine-tuning.
         if args.mode in ["pre-train", "fine-tune"]:
             model = train(

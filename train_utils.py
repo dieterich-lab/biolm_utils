@@ -81,7 +81,7 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls):
     return tokenizer
 
 
-def get_data(args, tokenizer, add_special_tokens, dataset_file, dataset_cls):
+def get_dataset(args, tokenizer, add_special_tokens, dataset_file, dataset_cls):
     if (
         not dataset_file.exists()  # required data file doesn't exist yet
         or args.getdata  # only tokenize the data and exit
