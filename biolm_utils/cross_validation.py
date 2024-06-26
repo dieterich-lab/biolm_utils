@@ -26,7 +26,7 @@ def parametrized_decorator(params, dataset):
         if params.mode == "tokenize":
 
             def non_cross_validate(*args, **kwargs):
-                res = func(*args, **kwargs)
+                res = func(None, None, None, None, None)
                 return res
 
             return non_cross_validate
@@ -186,8 +186,6 @@ def parametrized_decorator(params, dataset):
                     train_dataset = test_dataset = val_dataset = Subset(dataset, idx)
 
                 res = func(
-                    # *args,
-                    # **kwargs,
                     train_dataset,
                     val_dataset,
                     test_dataset,
@@ -202,11 +200,6 @@ def parametrized_decorator(params, dataset):
             def run_prediction(
                 *args,
                 **kwargs,
-                # train_dataset,
-                # val_dataset,
-                # test_dataset,
-                # model_load_path,
-                # model_save_path,
             ):
                 idx = np.arange(len(dataset))
                 test_dataset = Subset(dataset, idx)
