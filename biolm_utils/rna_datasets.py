@@ -5,7 +5,6 @@ import tempfile
 
 import numpy as np
 import pandas as pd
-import torch
 import transformers
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
 from torch.utils.data import Dataset
@@ -364,3 +363,6 @@ class RNABaseDataset(Dataset):
                 split_line = split_front + ["s"] + split_back
                 split_lines.append(split_line)
         return split_lines
+
+    def __getitem__(example):
+        raise NotImplementedError
