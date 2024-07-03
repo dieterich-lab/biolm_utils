@@ -218,7 +218,7 @@ The attributes under `training: general` should be mostly self-explanatory: `blo
 We also have to clarify data pre-processing and environment options:
 
 ```bash
-data pre-processing (RNA):
+data pre-processing:
   centertoken: False # either False or a token/character on which the sequence will be centered
 environment:
   ngpus: 1 # [1, 2, 4]
@@ -250,5 +250,13 @@ There are two use cases to resume a model using the `--resume` argument:
 a training that has been interrupted. For example, a planned training that was to run for 50 epochs and was interrupted  at epoch
 23 can be resumed from the best checkpoint to be run from epoch 23 to planned epoch 50.
 2) `--resume X` will trigger further pre-training a model from its best checkpoint for additional `X` epochs.
+
+
+## Customization
+
+This framwework on it's own does not provide full functionality. It is meant to be employed with plugins that implement the following classes and methods:
+- A custom model class that inherits from 🤗 [PreTrainedModel](https://huggingface.co/docs/transformers/v4.42.0/en/main_classes/model#transformers.PreTrainedModel) and provides a static `getconfig()` method.
+- A custom dataset class that inherits from [RNABaseDataset](./biolm_utils/rna_datasets.py) and provides the `__getitem__()` method.
+- A main script that imports the `run()` method from [biolm.py](./biolm_utils/biolm.py) and defines a custom `Config` object from [config.py](./biolm_utils/config.py) via `setconfig()`.
 
 ## License
