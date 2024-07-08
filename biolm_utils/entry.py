@@ -6,6 +6,7 @@ from pathlib import Path
 from transformers import Trainer
 
 from biolm_utils.params import parse_args
+from biolm_utils.rna_datasets import RNACNNDataset, RNALanguageDataset
 from biolm_utils.trainer import RegressionTrainer, WeightedRegressionTrainer
 
 # Get the arguments from the command line.
@@ -97,5 +98,7 @@ else:
 REGRESSIONTRAINER_CLS = (
     WeightedRegressionTrainer if args.weightedregression else RegressionTrainer
 )
+
+DATASET_CLS = RNALanguageDataset if args.encoding == "bpe" else RNACNNDataset
 
 MLMTRAINER_CLS = Trainer

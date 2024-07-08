@@ -44,11 +44,6 @@ def parametrized_decorator(params, dataset):
             def cross_validate(
                 *args,
                 **kwargs,
-                # train_dataset,
-                # val_dataset,
-                # test_dataset,
-                # model_load_path,
-                # model_save_path,
             ):
                 global MODELLOADPATH, MODELSAVEPATH, REPORTFILE, RANKFILE, OUTPUTPATH
 

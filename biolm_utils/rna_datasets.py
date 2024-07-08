@@ -5,6 +5,7 @@ import tempfile
 
 import numpy as np
 import pandas as pd
+import torch
 import transformers
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
 from torch.utils.data import Dataset
@@ -366,3 +367,24 @@ class RNABaseDataset(Dataset):
 
     def __getitem__(example):
         raise NotImplementedError
+
+
+class RNACNNDataset(RNABaseDataset):
+    def __getitem__(self, i):
+        example = self.examples[i].copy()
+        example["input_ids"] = self.OHE.transform(
+            np.reshape(example["input_ids"], (-1, 1))
+        )
+        if self.args.specifiersep is not None:
+            spec = self.specs[i]
+            example["input_ids"] = np.concatenate((example["input_ids"], spec), axis=1)
+        example["input_ids"] = torch.tensor(example["input_ids"], dtype=torch.float)
+        return example
+
+
+class RNALanguageDataset(RNABaseDataset):
+
+    def __getitem__(self, i):
+        example = self.examples[i].copy()
+        example["input_ids"] = torch.tensor(example["input_ids"], dtype=torch.long)
+        return example

@@ -42,7 +42,7 @@ if args.mode != "tokenize":
         else config.SPECIAL_TOKENIZER_FOR_TRAINER_CLS()
     )
     DATASET = get_dataset(
-        args, TOKENIZER, config.ADD_SPECIAL_TOKENS, DATASETFILE, config.DATASET_CLS
+        args, TOKENIZER, config.ADD_SPECIAL_TOKENS, DATASETFILE, DATASET_CLS
     )
 else:
     DATASET = None
