@@ -8,23 +8,63 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import torch
 from scipy.stats import spearmanr
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    mean_squared_error,
+    precision_recall_fscore_support,
+)
+from sklearn.utils import class_weight
 from transformers import EarlyStoppingCallback
 
 logger = logging.getLogger(__name__)
 
 
-def compute_metrics_for_regression(pred):
-    logits, labels = pred
-    logits = logits.squeeze().tolist()
-    labels = labels.squeeze().tolist()
-    mse = mean_squared_error(labels, logits)
-    spearman_rho, _ = spearmanr(logits, labels)
-    return {
-        "mse": mse,
-        "spearman rho": spearman_rho,
-    }
+def compute_metrics_for_regression(dataset, savepath):
+    def _compute_metrics(pred):
+        logits, labels = pred
+        logits = logits.squeeze().tolist()
+        labels = labels.squeeze().tolist()
+        mse = mean_squared_error(labels, logits)
+        spearman_rho, _ = spearmanr(logits, labels)
+        return {
+            "mse": mse,
+            "spearman rho": spearman_rho,
+        }
+
+    return _compute_metrics
+
+
+def compute_metrics_for_classification(dataset, savepath):
+    def _compute_metrics(pred):
+        labels = pred.label_ids
+        preds = pred.predictions.argmax(-1)
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            labels, preds, average="macro"
+        )
+        acc = accuracy_score(labels, preds)
+        names = list(set(preds).union(set(labels)))
+        target_names = [dataset.LE.classes_[x] for x in names]
+        report = classification_report(
+            labels,
+            preds,
+            output_dict=True,
+            target_names=target_names,
+            labels=names,
+            zero_division=0,
+        )
+        report_df = pd.DataFrame(report).transpose()
+        report_df.to_csv(savepath / "classification_report.csv")
+        logging.info(
+            classification_report(
+                labels, preds, target_names=target_names, labels=names, zero_division=0
+            )
+        )
+        return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
+
+    return _compute_metrics
 
 
 def get_tokenizer(args, tokenizer_file, tokenizer_cls):
@@ -119,6 +159,8 @@ def get_trainer(
     train_dataset,
     val_dataset,
     data_collator,
+    compute_metrics,
+    labels,
 ):
     if args.mode == "pre-train":
         trainer = trainer_cls(
@@ -128,8 +170,10 @@ def get_trainer(
             data_collator=data_collator,
             train_dataset=train_dataset,
             eval_dataset=val_dataset,
+            labels=None,
         )
-    else:  # fine-tuning tasks
+    elif args.task == "regression":
+        # else:  # fine-tuning tasks
         trainer = trainer_cls(
             model=model,
             tokenizer=tokenizer,
@@ -144,7 +188,28 @@ def get_trainer(
                 if not args.dev
                 else None
             ),
-            compute_metrics=compute_metrics_for_regression,
+            compute_metrics=compute_metrics,
+        )
+    elif args.task == "classification":
+        class_weights = class_weight.compute_class_weight(
+            "balanced", classes=np.unique(labels), y=np.array(labels)
+        )
+        trainer = trainer_cls(
+            model=model,
+            tokenizer=tokenizer,
+            args=training_args,
+            data_collator=data_collator,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+            callbacks=(
+                [
+                    EarlyStoppingCallback(early_stopping_patience=args.patience),
+                ]
+                if not args.dev
+                else None
+            ),
+            compute_metrics=compute_metrics,
+            weights=torch.tensor(class_weights).float(),
         )
 
     return trainer

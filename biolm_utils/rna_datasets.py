@@ -7,7 +7,12 @@ import numpy as np
 import pandas as pd
 import torch
 import transformers
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import (
+    LabelEncoder,
+    MinMaxScaler,
+    OneHotEncoder,
+    StandardScaler,
+)
 from torch.utils.data import Dataset
 
 
@@ -37,6 +42,8 @@ class RNABaseDataset(Dataset):
     ):
         self.tokenizer = tokenizer
         self.args = args
+        if args.task == "classification":
+            self.LE = LabelEncoder()
 
         with open(args.filepath, encoding="utf-8") as f:
             lines = [
@@ -214,20 +221,27 @@ class RNABaseDataset(Dataset):
 
         # get the labels and seq idx for each task.
         if args.mode in ["fine-tune", "predict"] and args.labelpos is not None:
-            self.labels = [
-                float(x.split(args.columnsep)[args.labelpos - 1].strip('"'))
-                for x in self.lines
-            ]
-            if args.weightpos is not None:
-                qualities = [
-                    x.split(",")[args.weightpos].strip('"') for x in self.lines
+            if args.task == "regression":
+                labels = [
+                    float(x.split(args.columnsep)[args.labelpos - 1].strip('"'))
+                    for x in self.lines
                 ]
-                qual_dict = {"STRONG": 1.0, "GOOD": 0.75, "WEAK": 0.5, "POOR": 0.25}
-                self.qualities = [qual_dict[x] for x in qualities]
+                if args.weightpos is not None:
+                    qualities = [
+                        x.split(",")[args.weightpos].strip('"') for x in self.lines
+                    ]
+                    qual_dict = {"STRONG": 1.0, "GOOD": 0.75, "WEAK": 0.5, "POOR": 0.25}
+                    self.qualities = [qual_dict[x] for x in qualities]
 
-            self.labels = self.scaler.fit_transform(
-                np.array(self.labels).reshape(-1, 1).astype(float)
-            )
+                self.labels = self.scaler.fit_transform(
+                    np.array(self.labels).reshape(-1, 1).astype(float)
+                )
+            elif args.task == "classification":
+                labels = [
+                    x.split(args.columnsep)[args.labelpos - 1].strip('"')
+                    for x in self.lines
+                ]
+                self.labels = self.LE.fit_transform(labels)
 
             # update self.examples with labels (and quality weights).
             if args.weightpos is None:

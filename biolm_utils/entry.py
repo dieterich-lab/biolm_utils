@@ -7,7 +7,10 @@ from transformers import Trainer
 
 from biolm_utils.params import parse_args
 from biolm_utils.rna_datasets import RNACNNDataset, RNALanguageDataset
-from biolm_utils.trainer import RegressionTrainer, WeightedRegressionTrainer
+from biolm_utils.train_utils import (compute_metrics_for_classification,
+                                     compute_metrics_for_regression)
+from biolm_utils.trainer import (RegressionTrainer, WeightedRegressionTrainer,
+                                 WeightedSamplingTrainer)
 
 # Get the arguments from the command line.
 args = parse_args()
@@ -99,6 +102,15 @@ REGRESSIONTRAINER_CLS = (
     WeightedRegressionTrainer if args.weightedregression else RegressionTrainer
 )
 
+# CLASSIFICATIONTRAINER_CLS = Trainer
+CLASSIFICATIONTRAINER_CLS = WeightedSamplingTrainer
+
 DATASET_CLS = RNALanguageDataset if args.encoding == "bpe" else RNACNNDataset
 
 MLMTRAINER_CLS = Trainer
+
+METRIC = (
+    compute_metrics_for_classification
+    if args.task == "classification"
+    else compute_metrics_for_regression
+)

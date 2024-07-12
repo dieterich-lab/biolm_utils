@@ -172,7 +172,7 @@ T | 0  | 0 | 0 | 0 |
 
 ### Training a tokenizer
 
-To train a tokenizer, you'll beusing the `tokenize` mode. The `encoding` parameter in the config file offers different encoding options. Under the section `tokenization` you'll find options to further customize the encoding process. 
+To train a tokenizer, you'll be using the `tokenize` mode. The `encoding` parameter in the config file offers different encoding options. Under the section `tokenization` you'll find options to further customize the encoding process. 
 
 ```yaml
 

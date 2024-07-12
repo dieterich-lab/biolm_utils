@@ -33,6 +33,13 @@ def parse_args(*args):
         `interpret` = Extraction of loo scores using the fine-tuned model on the fine-tuning dataset.
         """,
     )
+    parser.add_argument(
+        "--task",
+        choices=["regression_", "classification"],
+        help="""
+        Determines the kind of training (with correct choice of loss function, trainer and so on).
+        """,
+    )
 
     # Following identifies the data source.
     parser.add_argument("--filepath", type=str, help="The path the data file.")

@@ -12,7 +12,6 @@ from biolm_utils.entry import *
 from biolm_utils.interpret import loo_scores
 from biolm_utils.train_tokenizer import tokenize
 from biolm_utils.train_utils import (
-    compute_metrics_for_regression,
     create_reports,
     get_dataset,
     get_model,
@@ -60,13 +59,21 @@ def train(
 ):
 
     # Get the trainer class.
-    trainer_cls = MLMTRAINER_CLS if args.mode == "pre-train" else REGRESSIONTRAINER_CLS
+    trainer_cls = (
+        MLMTRAINER_CLS
+        if args.mode == "pre-train"
+        else (
+            REGRESSIONTRAINER_CLS
+            if args.task == "regression"
+            else CLASSIFICATIONTRAINER_CLS
+        )
+    )
 
     # Determine the output size of the network.
     if args.mode == "pre-train":
         nlabels = None
     else:  # regression tasks
-        nlabels = 1
+        nlabels = DATASET.LE.classes_.size if args.task == "classification" else 1
 
     # Getting the config.
     model_config = model_cls.get_config(
@@ -122,6 +129,10 @@ def train(
     )
 
     # Get the trainer for the training run.
+    COMPUTE_METRICS = (
+        None if args.mode == "pre-train" else METRIC(DATASET, model_save_path)
+    )
+    labels = DATASET.labels
     trainer = get_trainer(
         args,
         trainer_cls,
@@ -131,6 +142,8 @@ def train(
         train_dataset,
         val_dataset,
         data_collator,
+        COMPUTE_METRICS,
+        labels,
     )
 
     if args.resume == True:
@@ -181,9 +194,13 @@ def train(
 
 def test(test_dataset, data_collator, model_load_path, model_cls=None, model=None):
     # Get the trainer class.
-    trainer_cls = REGRESSIONTRAINER_CLS
+    trainer_cls = (
+        REGRESSIONTRAINER_CLS
+        if args.task == "regression"
+        else CLASSIFICATIONTRAINER_CLS
+    )
 
-    nlabels = 1
+    nlabels = 1 if args.task == "regression" else test_dataset.dataset.LE.classes_.size
 
     # Load the pre-trained model if not given.
     if model is None:
@@ -221,13 +238,27 @@ def test(test_dataset, data_collator, model_load_path, model_cls=None, model=Non
     )
 
     # Define the trainer ("predictor") for the test set.
-    evaluator = trainer_cls(
-        model=model,
-        tokenizer=TOKENIZER_FOR_TRAINER,
-        args=test_args,
-        data_collator=data_collator,
-        compute_metrics=compute_metrics_for_regression,
+    COMPUTE_METRICS = METRIC(DATASET, model_load_path)
+    labels = DATASET.labels
+    evaluator = get_trainer(
+        args,
+        trainer_cls,
+        model,
+        TOKENIZER_FOR_TRAINER,
+        None,
+        None,
+        None,
+        data_collator,
+        COMPUTE_METRICS,
+        labels,
     )
+    # evaluator = trainer_cls(
+    #     model=model,
+    #     tokenizer=TOKENIZER_FOR_TRAINER,
+    #     args=test_args,
+    #     data_collator=data_collator,
+    #     compute_metrics=COMPUTE_METRICS,
+    # )
 
     # Get metrics and predictions from the test set.
     test_results = evaluator.predict(test_dataset)
@@ -240,8 +271,11 @@ def test(test_dataset, data_collator, model_load_path, model_cls=None, model=Non
     scaler = model.scaler
     create_reports(test_dataset, test_results, scaler, REPORTFILE, RANKFILE)
 
-    if hasattr(test_dataset.dataset, "labels"):
+    # if hasattr(test_dataset.dataset, "labels"):
+    if args.task == "regression":
         return test_results.metrics["test_spearman rho"]
+    if args.task == "classification":
+        return test_results.metrics["test_f1"]
 
 
 @parametrized_decorator(args, DATASET)
