@@ -5,7 +5,7 @@ build-backend = 'setuptools.build_meta'
 [project]
 name = 'biolm_utils'
 version = '0.0.1'
-dependencies = ['transformers', 'torch', 'torchvision', 'torchaudio', 'pandas', 'ferret-xai', 'accelerate']
+dependencies = ['transformers', 'torch', 'torchvision', 'torchaudio', 'pandas', 'ferret-xai', 'accelerate', 'tensorboard']
 
 
 [tool.setuptools.packages.find]
@@ -13,4 +13,4 @@ exclude = ['tests']
 
 
 [project.optional-dependencies]
-dev = [ 'debugpy', 'tensorboard', 'torch-tb-profiler']
+dev = [ 'debugpy', 'torch-tb-profiler']
