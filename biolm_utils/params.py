@@ -109,7 +109,6 @@ def parse_args(*args):
         "--encoding",
         type=str,
         nargs="?",
-        default="bpe",
         choices=["bpe", "3mer", "5mer", "atomic"],
         help="""
         Defines how to tokenize an input string. 
