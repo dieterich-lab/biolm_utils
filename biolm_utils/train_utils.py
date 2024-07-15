@@ -176,7 +176,7 @@ def get_trainer(
             data_collator=data_collator,
             train_dataset=train_dataset,
             eval_dataset=val_dataset,
-            labels=None,
+            # labels=None,
         )
     elif args.task == "regression":
         # else:  # fine-tuning tasks

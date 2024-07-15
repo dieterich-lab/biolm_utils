@@ -132,7 +132,12 @@ def train(
     COMPUTE_METRICS = (
         None if args.mode == "pre-train" else METRIC(DATASET, model_save_path)
     )
-    labels = DATASET.labels
+
+    if args.mode == "pre-train":
+        labels = None
+    else:
+        labels = DATASET.labels
+
     trainer = get_trainer(
         args,
         trainer_cls,
