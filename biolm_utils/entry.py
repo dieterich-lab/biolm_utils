@@ -22,9 +22,12 @@ if args.outputpath is None:
 OUTPUTPATH = Path(args.outputpath)
 OUTPUTPATH.mkdir(parents=True, exist_ok=True)
 
-MODELLOADPATH = None
+# MODELLOADPATH = None
 TOKENIZERFILE = OUTPUTPATH / "tokenizer.json"
-MODELLOADPATH = OUTPUTPATH / "fine-tune"
+if args.mode == "fine-tune":
+    MODELLOADPATH = OUTPUTPATH / "pre-train"
+elif args.mode in ["interpret", "test"]:
+    MODELLOADPATH = OUTPUTPATH / "fine-tune"
 
 # `pretrainedmodel` changes either:
 # - different tokenizer when pre-training
@@ -37,8 +40,8 @@ if args.pretrainedmodel:
     else:
         TOKENIZERFILE = Path(args.pretrainedmodel) / "tokenizer.json"
 
-if MODELLOADPATH is not None:
-    MODELLOADPATH.mkdir(parents=True, exist_ok=True)
+# if MODELLOADPATH is not None:
+#     MODELLOADPATH.mkdir(parents=True, exist_ok=True)
 
 MODELSAVEPATH = OUTPUTPATH / args.mode
 if args.mode not in ["tokenize", "predict", "interpret"]:
@@ -48,7 +51,8 @@ RANKFILE = MODELSAVEPATH / "rank_deltas.csv"
 TBPATH = MODELSAVEPATH / "tboard"
 LOGPATH = MODELSAVEPATH / "logs"
 LOGPATH.mkdir(parents=True, exist_ok=True)
-TBPATH.mkdir(parents=True, exist_ok=True)
+if args.mode not in ["tokenize", "predict", "interpret"]:
+    TBPATH.mkdir(parents=True, exist_ok=True)
 
 if args.mode != "interpret":
     DATASETFILE = OUTPUTPATH / args.mode / "dataset.json"
