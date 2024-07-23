@@ -98,6 +98,8 @@ def parametrized_decorator(params, dataset):
                         test_dataset,
                         MODELLOADPATH,
                         MODELSAVEPATH,
+                        REPORTFILE,
+                        RANKFILE,
                     )
                     results.append(res)
 
@@ -120,14 +122,9 @@ def parametrized_decorator(params, dataset):
         # For the rest of the data, we don't do cross validation
         elif params.mode == "pre-train":
 
-            def validate_pretraining(
+            def run_pretraining(
                 *args,
                 **kwargs,
-                # train_dataset,
-                # val_dataset,
-                # test_dataset,
-                # model_load_path,
-                # model_save_path,
             ):
 
                 # Shuffle the data ids.
@@ -150,7 +147,7 @@ def parametrized_decorator(params, dataset):
                     MODELSAVEPATH,
                 )
 
-            return validate_pretraining
+            return run_pretraining
         elif params.mode == "fine-tune":
 
             def run_finetuning(
@@ -186,6 +183,8 @@ def parametrized_decorator(params, dataset):
                     test_dataset,
                     MODELLOADPATH,
                     MODELSAVEPATH,
+                    REPORTFILE,
+                    RANKFILE,
                 )
                 return res
 
@@ -199,7 +198,6 @@ def parametrized_decorator(params, dataset):
                 idx = np.arange(len(dataset))
                 test_dataset = Subset(dataset, idx)
 
-                # res = func(*args, **kwargs)
                 res = func(None, None, test_dataset, MODELLOADPATH, MODELSAVEPATH)
                 return res
 

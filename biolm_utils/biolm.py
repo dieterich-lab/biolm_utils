@@ -8,7 +8,17 @@ from transformers import DefaultDataCollator, TrainerState, TrainingArguments
 
 from biolm_utils.config import get_config
 from biolm_utils.cross_validation import parametrized_decorator
-from biolm_utils.entry import *
+from biolm_utils.entry import (
+    CHECKPOINTPATH,
+    DATASET_CLS,
+    DATASETFILE,
+    GRADACC,
+    MLMTRAINER_CLS,
+    REGRESSIONTRAINER_CLS,
+    TBPATH,
+    TOKENIZERFILE,
+    args,
+)
 from biolm_utils.interpret import loo_scores
 from biolm_utils.train_tokenizer import tokenize
 from biolm_utils.train_utils import (
@@ -179,7 +189,15 @@ def train(
     return model
 
 
-def test(test_dataset, data_collator, model_load_path, model_cls=None, model=None):
+def test(
+    test_dataset,
+    data_collator,
+    model_load_path,
+    report_file,
+    rank_file,
+    model_cls=None,
+    model=None,
+):
     # Get the trainer class.
     trainer_cls = REGRESSIONTRAINER_CLS
 
@@ -206,7 +224,7 @@ def test(test_dataset, data_collator, model_load_path, model_cls=None, model=Non
 
     # Define the test arguments.
     test_args = TrainingArguments(
-        output_dir=OUTPUTPATH,
+        output_dir=model_load_path,
         do_train=False,
         do_predict=True,
         per_device_eval_batch_size=args.batchsize,
@@ -238,14 +256,22 @@ def test(test_dataset, data_collator, model_load_path, model_cls=None, model=Non
 
     # Create the reports
     scaler = model.scaler
-    create_reports(test_dataset, test_results, scaler, REPORTFILE, RANKFILE)
+    create_reports(test_dataset, test_results, scaler, report_file, rank_file)
 
     if hasattr(test_dataset.dataset, "labels"):
         return test_results.metrics["test_spearman rho"]
 
 
 @parametrized_decorator(args, DATASET)
-def run(train_dataset, val_dataset, test_dataset, model_load_path, model_save_path):
+def run(
+    train_dataset,
+    val_dataset,
+    test_dataset,
+    model_load_path,
+    model_save_path,
+    report_file=None,
+    rank_file=None,
+):
 
     if args.mode == "tokenize":
         tokenize(args)
@@ -279,6 +305,8 @@ def run(train_dataset, val_dataset, test_dataset, model_load_path, model_save_pa
                     data_collator=data_collator,
                     model=model,
                     model_load_path=model_save_path,
+                    report_file=report_file,
+                    rank_file=rank_file,
                 )
                 return test_results
         # Testing (inference) an already trained model.
@@ -288,6 +316,8 @@ def run(train_dataset, val_dataset, test_dataset, model_load_path, model_save_pa
                 test_dataset=test_dataset,
                 data_collator=data_collator,
                 model_load_path=model_load_path,
+                report_file=report_file,
+                rank_file=rank_file,
             )
             return test_results
         # Calculation of LOO scores for a trained model.

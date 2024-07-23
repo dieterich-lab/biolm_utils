@@ -22,12 +22,13 @@ if args.outputpath is None:
 OUTPUTPATH = Path(args.outputpath)
 OUTPUTPATH.mkdir(parents=True, exist_ok=True)
 
-# MODELLOADPATH = None
 TOKENIZERFILE = OUTPUTPATH / "tokenizer.json"
 if args.mode == "fine-tune":
     MODELLOADPATH = OUTPUTPATH / "pre-train"
 elif args.mode in ["interpret", "test"]:
     MODELLOADPATH = OUTPUTPATH / "fine-tune"
+else:
+    MODELLOADPATH = None
 
 # `pretrainedmodel` changes either:
 # - different tokenizer when pre-training
@@ -39,9 +40,6 @@ if args.pretrainedmodel:
         TOKENIZERFILE = MODELLOADPATH / "tokenizer.json"
     else:
         TOKENIZERFILE = Path(args.pretrainedmodel) / "tokenizer.json"
-
-# if MODELLOADPATH is not None:
-#     MODELLOADPATH.mkdir(parents=True, exist_ok=True)
 
 MODELSAVEPATH = OUTPUTPATH / args.mode
 if args.mode not in ["tokenize", "predict", "interpret"]:
