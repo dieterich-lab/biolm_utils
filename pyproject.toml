@@ -8,12 +8,12 @@ version = '0.0.1'
 
 dependencies = [
 	'accelerate==0.31.0',
-	'ferret-xai==0.8.0',
+	'ferret-xai==0.4.2',
 	'numpy==2.0.1',
 	'pandas==2.2.2',
 	'PyYAML==6.0.1',
 	'PyYAML==6.0.1',
-	'scikit_learn==1.5.1',
+	'scikit_learn==1.5.0',
 	'scipy==1.14.0',
 	'shap==0.44.1',
 	'tensorboard==0.7.2',
@@ -29,4 +29,4 @@ exclude = ['tests']
 
 
 [project.optional-dependencies]
-dev = ['debugpy', 'torch-tb-profiler']
+dev = ['debugpy', 'torch-tb-profiler==0.4.3']
