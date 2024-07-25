@@ -49,27 +49,29 @@ def parametrized_decorator(params, dataset):
 
                 # This list collects the results of the individual splits.
                 results = list()
-                for test_split in range(len(split_dict)):
+                for val_split in range(len(split_dict)):
+                    # for test_split in range(len(split_dict)):
 
                     # We'll change the paths to save model and outputs for each split seperately.
-                    MODELSAVEPATH = MODELSAVEPATH / f"{test_split}"
-                    OUTPUTPATH = OUTPUTPATH / f"{test_split}"
-                    REPORTFILE = REPORTFILE.parent / f"{test_split}" / REPORTFILE.name
+                    MODELSAVEPATH = MODELSAVEPATH / f"{val_split}"
+                    OUTPUTPATH = OUTPUTPATH / f"{val_split}"
+                    REPORTFILE = REPORTFILE.parent / f"{val_split}" / REPORTFILE.name
 
                     if params.mode == "fine-tune":
-                        RANKFILE = RANKFILE.parent / f"{test_split}" / RANKFILE.name
+                        RANKFILE = RANKFILE.parent / f"{val_split}" / RANKFILE.name
                     if params.mode == "interpret":
-                        MODELLOADPATH = MODELLOADPATH / f"{test_split}"
+                        MODELLOADPATH = MODELLOADPATH / f"{val_split}"
 
                     # Define the validation split id.
-                    val_split = (test_split - 1) % len(split_dict)
+                    # val_split = (test_split - 1) % len(split_dict)
 
                     # Get the validation and test idx.
                     val_idx = split_dict[val_split]
-                    test_idx = split_dict[test_split]
+                    # test_idx = split_dict[test_split]
 
                     # Define the trianing split idx.
-                    train_splits = set(range(len(split_dict))) - {test_split, val_split}
+                    train_splits = set(range(len(split_dict))) - {val_split}
+                    # train_splits = set(range(len(split_dict))) - {test_split, val_split}
                     train_idx = list()
 
                     # Collect the training idx.
@@ -78,24 +80,23 @@ def parametrized_decorator(params, dataset):
 
                     # Create the datasets.
                     if not params.dev:
-                        test_dataset = Subset(dataset, test_idx)
                         train_dataset = Subset(dataset, train_idx)
                         val_dataset = Subset(dataset, val_idx)
                     else:
-                        train_dataset = test_dataset = val_dataset = Subset(
+                        train_dataset = val_dataset = Subset(
                             dataset, np.arange(len(dataset))
                         )
 
-                    logger.info(f"Split {test_split}")
+                    logger.info(f"Split {val_split}")
                     logger.info(
-                        f"Len train dataset: {len(train_dataset)}, len val dataset: {len(val_dataset)}, len test dataset: {len(test_dataset)}"
+                        f"Len train dataset: {len(train_dataset)}, len val dataset: {len(val_dataset)}"
                     )
 
                     # Train, test or interpret and collect results.
                     res = func(
                         train_dataset,
                         val_dataset,
-                        test_dataset,
+                        None,
                         MODELLOADPATH,
                         MODELSAVEPATH,
                         REPORTFILE,
@@ -114,7 +115,7 @@ def parametrized_decorator(params, dataset):
 
                 if params.mode != "interpret":
                     logger.info(
-                        f"Mean results: {np.mean(results)}, Std: {np.std(results)}"
+                        f"Mean validation results: {np.mean(results)}, Std: {np.std(results)}"
                     )
                     return results
 
@@ -153,11 +154,6 @@ def parametrized_decorator(params, dataset):
             def run_finetuning(
                 *args,
                 **kwargs,
-                # train_dataset,
-                # val_dataset,
-                # test_dataset,
-                # model_load_path,
-                # model_save_path,
             ):
 
                 # Shuffle the data ids.
@@ -172,15 +168,15 @@ def parametrized_decorator(params, dataset):
                 if not params.dev:
                     train_dataset = Subset(dataset, train_idx)
                     val_dataset = Subset(dataset, val_idx)
-                    test_dataset = None
                 # These are debugging settings.
                 else:
-                    train_dataset = test_dataset = val_dataset = Subset(dataset, idx)
+                    train_dataset = val_dataset = Subset(dataset, idx)
+                    # train_dataset = test_dataset = val_dataset = Subset(dataset, idx)
 
                 res = func(
                     train_dataset,
                     val_dataset,
-                    test_dataset,
+                    None,
                     MODELLOADPATH,
                     MODELSAVEPATH,
                     REPORTFILE,

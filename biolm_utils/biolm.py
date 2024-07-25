@@ -113,7 +113,7 @@ def train(
         gradient_accumulation_steps=GRADACC,
         save_total_limit=1,
         load_best_model_at_end=args.mode != "pre-train",
-        evaluation_strategy="epoch" if args.mode != "pre-train" else "no",
+        eval_strategy="epoch" if args.mode != "pre-train" else "no",
         save_strategy="epoch",
         logging_strategy="epoch" if args.mode != "pre-train" else "steps",
         disable_tqdm=True,
@@ -186,7 +186,10 @@ def train(
         trainer.log_metrics("eval", eval_metrics)
         trainer.save_metrics("eval", eval_metrics)
 
-    return model
+        if hasattr(train_dataset.dataset, "labels"):
+            return eval_metrics["eval_spearman rho"]
+
+    # return model
 
 
 def test(
@@ -289,7 +292,7 @@ def run(
             data_collator = DefaultDataCollator()
         # Pre-training and fine-tuning.
         if args.mode in ["pre-train", "fine-tune"]:
-            model = train(
+            eval_results = train(
                 model_cls=model_cls,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
@@ -299,16 +302,16 @@ def run(
                 tokenizer=TOKENIZER,
             )
             # Testing (inference) after cross-validation.
-            if args.splitpos is not None:
-                test_results = test(
-                    test_dataset=test_dataset,
-                    data_collator=data_collator,
-                    model=model,
-                    model_load_path=model_save_path,
-                    report_file=report_file,
-                    rank_file=rank_file,
-                )
-                return test_results
+            # if args.splitpos is not None:
+            #     test_results = test(
+            #         test_dataset=test_dataset,
+            #         data_collator=data_collator,
+            #         model=model,
+            #         model_load_path=model_save_path,
+            #         report_file=report_file,
+            #         rank_file=rank_file,
+            #     )
+            return eval_results
         # Testing (inference) an already trained model.
         elif args.mode == "predict":
             test_results = test(
