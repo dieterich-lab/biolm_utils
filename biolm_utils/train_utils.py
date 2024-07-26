@@ -86,15 +86,16 @@ def get_dataset(args, tokenizer, add_special_tokens, dataset_file, dataset_cls):
         not dataset_file.exists()  # required data file doesn't exist yet
         or args.getdata  # only tokenize the data and exit
         or args.dev  # debug mode
-        or args.mode
-        == "predict"  # here, we expect a new file which should not be saved
+        # or args.mode
+        # == "predict"  # here, we expect a new file which should not be saved
     ):
         dataset = dataset_cls(
             tokenizer=tokenizer,
             args=args,
             add_special_tokens=add_special_tokens,
         )
-        if args.mode != "predict" and not args.dev:
+        # if args.mode != "predict" and not args.dev:
+        if not args.dev:
             logger.info(f"Saving dataset to {dataset_file}")
             with open(dataset_file, "wb") as f:
                 pickle.dump(dataset, f)
