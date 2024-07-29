@@ -56,9 +56,8 @@ LOGPATH.mkdir(parents=True, exist_ok=True)
 if args.mode not in ["tokenize", "predict", "interpret"]:
     TBPATH.mkdir(parents=True, exist_ok=True)
 
-if args.mode == "predict":
+if args.mode in ["predict", "interpret"]:
     DATASETFILE = OUTPUTPATH / "dataset.json"
-    # DATASETFILE = OUTPUTPATH / args.mode / "dataset.json"
 elif args.mode != "interpret":
     DATASETFILE = OUTPUTPATH / args.mode / "dataset.json"
 else:

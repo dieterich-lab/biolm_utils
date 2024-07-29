@@ -274,6 +274,7 @@ def run(
     model_save_path,
     report_file=None,
     rank_file=None,
+    output_path=None,
 ):
 
     if args.mode == "tokenize":
@@ -301,16 +302,6 @@ def run(
                 model_save_path=model_save_path,
                 tokenizer=TOKENIZER,
             )
-            # Testing (inference) after cross-validation.
-            # if args.splitpos is not None:
-            #     test_results = test(
-            #         test_dataset=test_dataset,
-            #         data_collator=data_collator,
-            #         model=model,
-            #         model_load_path=model_save_path,
-            #         report_file=report_file,
-            #         rank_file=rank_file,
-            #     )
             return eval_results
         # Testing (inference) an already trained model.
         elif args.mode == "predict":
@@ -331,6 +322,7 @@ def run(
                 model_cls=model_cls,
                 test_dataset=test_dataset,
                 model_load_path=model_load_path,
+                output_path=output_path,
                 remove_first_last=config.ADD_SPECIAL_TOKENS,
             )
             return scores

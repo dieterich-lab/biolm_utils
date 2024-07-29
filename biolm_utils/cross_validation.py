@@ -185,7 +185,7 @@ def parametrized_decorator(params, dataset):
                 return res
 
             return run_finetuning
-        elif params.mode == "predict":
+        elif params.mode in ["predict", "interpret"]:
 
             def run_prediction(
                 *args,
@@ -202,6 +202,7 @@ def parametrized_decorator(params, dataset):
                     MODELSAVEPATH,
                     REPORTFILE,
                     RANKFILE,
+                    OUTPUTPATH,
                 )
                 return res
 

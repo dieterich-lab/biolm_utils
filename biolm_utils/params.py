@@ -5,7 +5,7 @@ from collections.abc import MutableMapping
 import yaml
 
 
-def none_or_int(x):
+def eval_str(x):
     return eval(x)
 
 
@@ -81,7 +81,7 @@ def parse_args(*args):
     )
     parser.add_argument(
         "--splitpos",
-        type=none_or_int,
+        type=eval_str,
         default=None,
         help="The field position of the split identifier of the split. or 'None' if no cross validation is desired.",
     )
@@ -267,6 +267,12 @@ def parse_args(*args):
         type=str,
         choices=["remove", "mask", "replace"],
         help="How to handle 'missing' tokens during interpretability calculations.",
+    )
+    parser.add_argument(
+        "--replacementlists",
+        default=None,
+        type=eval_str,
+        help="List of lists of atomic tokens that should be replaced against each other if `--handletokens` is set to `replace`.",
     )
 
     # Debugging options

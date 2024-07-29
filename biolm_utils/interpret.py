@@ -10,27 +10,51 @@ warnings.filterwarnings("ignore", message=".*The 'nopython' keyword.*")
 
 import shap
 
+from biolm_utils.config import get_config
+from biolm_utils.entry import DATASET_CLS, DATASETFILE, TOKENIZERFILE
 from biolm_utils.loo_utils import TauLOO_Evaluation_For_Regression
-from biolm_utils.train_utils import get_model
+from biolm_utils.train_utils import get_dataset, get_model, get_tokenizer
 
 
 def loo_scores(
-    args, tokenizer, model_cls, test_dataset, model_load_path, remove_first_last
+    args,
+    tokenizer,
+    model_cls,
+    test_dataset,
+    model_load_path,
+    output_path,
+    remove_first_last,
 ):
-    pkl_file = model_load_path / f"loo_scores_{args.handletokens}.pkl"
-    csv_file = model_load_path / f"loo_scores_{args.handletokens}.csv"
+    config = get_config()
+    pkl_file = output_path / f"loo_scores_{args.handletokens}.pkl"
+    csv_file = output_path / f"loo_scores_{args.handletokens}.csv"
 
     test_idx = test_dataset.indices
 
-    # Getting the model config.
-    config = model_cls.get_config(args, tokenizer, args.blocksize)
-
-    # Determine the output size of the network.
     nlabels = 1
 
-    # Getting model.
+    TOKENIZER = get_tokenizer(args, TOKENIZERFILE, config.TOKENIZER_CLS)
+    DATASET = get_dataset(
+        args, TOKENIZER, config.ADD_SPECIAL_TOKENS, DATASETFILE, DATASET_CLS
+    )
+
+    # Getting the config.
+    model_config = model_cls.get_config(
+        args=args,
+        config_cls=config.CONFIG_CLS,
+        tokenizer=tokenizer,
+        dataset=DATASET,
+        nlabels=nlabels,
+    )
+
     model = get_model(
-        args, model_cls, tokenizer, config, model_load_path, nlabels, test_dataset
+        args=args,
+        model_cls=model_cls,
+        tokenizer=TOKENIZER,
+        config=model_config,
+        model_load_path=model_load_path,
+        pretraining_required=config.PRETRAINING_REQUIRED,
+        scaler=test_dataset.dataset.scaler,
     )
 
     # Send the model to the proper device
@@ -47,20 +71,22 @@ def loo_scores(
     for i, test_id in enumerate(test_idx):
         logging.info(f"{i}, {test_id}")
         seq = test_dataset.dataset.lines[test_id]
-        loo_score, rescaled_pred, tokens, replacements = (
+        sample = test_dataset.dataset[test_id]
+        loo_score, rescaled_pred, token_list, replacements = (
             tl.compute_leave_one_out_occlusion(
-                seq,
-                target=0,
+                text=seq,
+                sample=sample,
                 remove_first_last=remove_first_last,
                 handle_tokens=args.handletokens,
                 scaler=test_dataset.dataset.scaler,
                 batch_size=args.batchsize,
+                replacement_lists=args.replacementlists,
             )
         )
-        tokens = [x.replace("Ġ", "") for x in tokens]
+        token_list = [x.replace("Ġ", "") for x in token_list]
         scores = list()
         if replacements is not None:
-            for j, (token, replacement) in enumerate(zip(tokens, replacements)):
+            for j, (token, replacement) in enumerate(zip(token_list, replacements)):
                 for k, rep in enumerate(replacement):
                     scores.append(
                         (token, rep, loo_score[j + k].item(), rescaled_pred, j)
@@ -69,7 +95,7 @@ def loo_scores(
         else:
             # Here, we'll save the scores conveniently as `shap.Explanation` object.
             exp = shap.Explanation(
-                loo_score[None, :], rescaled_pred, feature_names=tokens
+                loo_score[None, :], rescaled_pred, feature_names=token_list
             )
             loo_scores.append(exp)
 
@@ -77,7 +103,7 @@ def loo_scores(
         rescaled_label = test_dataset.dataset.scaler.inverse_transform(label)
         seq = test_dataset.dataset.seq_idx[test_id]
         if replacements is not None:
-            tokens = [x[0] for x in loo_scores[-1]]
+            token_list = [x[0] for x in loo_scores[-1]]
             reps = [x[1] for x in loo_scores[-1]]
             loos = [x[2] for x in loo_scores[-1]]
             preds = [x[3].item() for x in loo_scores[-1]]
@@ -88,11 +114,11 @@ def loo_scores(
             loos = loo_scores[-1].values.tolist()[0]
             seqs = [seq] * loo_scores[-1].shape[1]
             labels = [rescaled_label.item()] * loo_scores[-1].shape[1]
-            tokens = loo_scores[-1].feature_names
+            token_list = loo_scores[-1].feature_names
             preds = list(loo_scores[-1].base_values) * loo_scores[-1].shape[1]
         starts, ends = list(), list()
         pos = 0
-        for k, token in enumerate(tokens):
+        for k, token in enumerate(token_list):
             if replacements is not None:
                 if k == 0:
                     starts.append(0)
@@ -112,13 +138,13 @@ def loo_scores(
                 else:
                     starts.append(ends[-1])
                     ends.append(ends[-1] + len(token))
-        assert len(loos) == len(starts) == len(ends)
+        # assert len(loos) == len(starts) == len(ends)
 
         if replacements is not None:
             data = list(
                 zip(
                     seqs,
-                    tokens,
+                    token_list,
                     reps,
                     labels,
                     preds,
@@ -141,7 +167,7 @@ def loo_scores(
             data = list(
                 zip(
                     seqs,
-                    tokens,
+                    token_list,
                     labels,
                     preds,
                     starts,

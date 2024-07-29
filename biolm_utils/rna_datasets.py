@@ -189,7 +189,6 @@ class RNABaseDataset(Dataset):
         )["input_ids"]
 
         # Define a one-hot encoder
-        self.OHE = self._get_OHE()
         non_special_vocab = [
             v
             for k, v in self.tokenizer.vocab.items()
@@ -213,7 +212,10 @@ class RNABaseDataset(Dataset):
             self.scaler = IdentityScaler()
 
         # get the labels and seq idx for each task.
-        if args.mode in ["fine-tune", "predict"] and args.labelpos is not None:
+        if (
+            args.mode in ["fine-tune", "predict", "interpret"]
+            and args.labelpos is not None
+        ):
             self.labels = [
                 float(x.split(args.columnsep)[args.labelpos - 1].strip('"'))
                 for x in self.lines
@@ -320,13 +322,10 @@ class RNABaseDataset(Dataset):
             self.tokenizer.convert_ids_to_tokens(x["input_ids"]) for x in self.examples
         ]
         data_df["lengths"] = data_df["seq"].apply(lambda x: len(x))
-        if self.args.mode in ["fine-tune", "predict"]:
+        if self.args.mode in ["fine-tune", "predict", "interpret"]:
             data_df["labels"] = self.labels
         logging.info("Dataset statistics after truncation and adding special tokens:")
         logging.info(data_df.describe(include="all"))
-
-    def _get_OHE(self):
-        return None
 
     @staticmethod
     def tokenize_kmers(lines, args):
@@ -368,8 +367,42 @@ class RNABaseDataset(Dataset):
     def __getitem__(example):
         raise NotImplementedError
 
+    # def __getitem__(self, i):
+    #     example = self.examples[i].copy()
+    #     example["input_ids"] = torch.tensor(example["input_ids"], dtype=torch.long)
+    #     return example
+
 
 class RNACNNDataset(RNABaseDataset):
+    # def __init__(self, **args):
+    #     super().__init__(**args)
+    #     # Define a one-hot encoder
+    #     non_special_vocab = [
+    #         v
+    #         for k, v in self.tokenizer.vocab.items()
+    #         if k not in self.tokenizer.special_tokens_map.values()
+    #     ]
+    #     self.OHE = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+    #     self.OHE.fit([[x] for x in non_special_vocab])
+
+    #     _examples = list()
+    #     for i, example in enumerate(self.examples.copy()):
+    #         example["input_ids"] = self.OHE.transform(
+    #             np.reshape(example["input_ids"], (-1, 1))
+    #         )
+    #         if self.args.specifiersep is not None:
+    #             spec = self.specs[i]
+    #             example["input_ids"] = np.concatenate(
+    #                 (example["input_ids"], spec), axis=1
+    #             )
+    #         _examples.append(example)
+    #     self.examples = _examples
+
+    # def __getitem__(self, i):
+    #     example = self.examples[i].copy()
+    #     example["input_ids"] = torch.tensor(example["input_ids"], dtype=torch.long)
+    #     return example
+
     def __getitem__(self, i):
         example = self.examples[i].copy()
         example["input_ids"] = self.OHE.transform(
