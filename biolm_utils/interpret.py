@@ -33,24 +33,29 @@ def loo_scores(
 
     nlabels = 1
 
-    TOKENIZER = get_tokenizer(args, TOKENIZERFILE, config.TOKENIZER_CLS)
-    DATASET = get_dataset(
-        args, TOKENIZER, config.ADD_SPECIAL_TOKENS, DATASETFILE, DATASET_CLS
-    )
+    # TOKENIZER = get_tokenizer(args, TOKENIZERFILE, config.TOKENIZER_CLS)
+    # DATASET = get_dataset(
+    #     args, tokenizer, config.ADD_SPECIAL_TOKENS, DATASETFILE, DATASET_CLS
+    # )
+    # DATASET = get_dataset(
+    #     args, TOKENIZER, config.ADD_SPECIAL_TOKENS, DATASETFILE, DATASET_CLS
+    # )
 
     # Getting the config.
     model_config = model_cls.get_config(
         args=args,
         config_cls=config.CONFIG_CLS,
         tokenizer=tokenizer,
-        dataset=DATASET,
+        dataset=test_dataset.dataset,
+        # dataset=DATASET,
         nlabels=nlabels,
     )
 
     model = get_model(
         args=args,
         model_cls=model_cls,
-        tokenizer=TOKENIZER,
+        tokenizer=tokenizer,
+        # tokenizer=TOKENIZER,
         config=model_config,
         model_load_path=model_load_path,
         pretraining_required=config.PRETRAINING_REQUIRED,
@@ -64,18 +69,22 @@ def loo_scores(
     loo_scores = list()
 
     tl = TauLOO_Evaluation_For_Regression(
-        model, tokenizer, OHE=test_dataset.dataset.OHE, tokensep=args.tokensep
+        model,
+        tokenizer,
+        OHE=test_dataset.dataset.OHE,
+        specs=test_dataset.dataset.specs,
+        specifiersep=args.specifiersep,
+        tokensep=args.tokensep,
     )
 
     # for i, id in enumerate(test_idx[:1]):
     for i, test_id in enumerate(test_idx):
         logging.info(f"{i}, {test_id}")
         seq = test_dataset.dataset.lines[test_id]
-        sample = test_dataset.dataset[test_id]
         loo_score, rescaled_pred, token_list, replacements = (
             tl.compute_leave_one_out_occlusion(
                 text=seq,
-                sample=sample,
+                id=test_id,
                 remove_first_last=remove_first_last,
                 handle_tokens=args.handletokens,
                 scaler=test_dataset.dataset.scaler,

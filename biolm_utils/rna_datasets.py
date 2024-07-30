@@ -37,6 +37,8 @@ class RNABaseDataset(Dataset):
     ):
         self.tokenizer = tokenizer
         self.args = args
+        self.nspecs = 0
+        self.specs = None
 
         with open(args.filepath, encoding="utf-8") as f:
             lines = [
@@ -67,7 +69,6 @@ class RNABaseDataset(Dataset):
             tokenizer.backend_tokenizer.normalizer.normalize_str(x) for x in lines
         ]
 
-        self.nspecs = 0
         if args.specifiersep is not None:
             with open(tokenizer.name_or_path, "r") as f:
                 tokenizer_json = json.load(f)

@@ -274,6 +274,11 @@ def parse_args(*args):
         type=eval_str,
         help="List of lists of atomic tokens that should be replaced against each other if `--handletokens` is set to `replace`.",
     )
+    parser.add_argument(
+        "--replacespecifier",
+        action="store_true",
+        help="if `True` and `handletokens` is set to `replace`, the modifiers (separated by `specifiersep`) will olso nce be set to `0.0`.",
+    )
 
     # Debugging options
     parser.add_argument(
