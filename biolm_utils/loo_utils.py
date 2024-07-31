@@ -36,7 +36,7 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
         _, logits = self.helper._forward(
             text=text,
             OHE=self.OHE,
-            specs=self.specs[id][None, :, :],
+            specs=None if self.specs is None else self.specs[id][None, :, :],
             batch_size=batch_size,
             add_special_tokens=self.OHE is None,
         )
@@ -101,7 +101,8 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
                     if self.tokensep is not None:
                         decoded_sample = decoded_sample.replace(" ", self.tokensep)
                     samples.append(decoded_sample)
-                    sample_specs.append(self.specs[id])
+                    if self.specs is not None:
+                        sample_specs.append(self.specs[id])
                 if replacespecifier and sum(self.specs[id][occ_idx]) > 0:
                     samples.append(text)
                     knockout_spec = self.specs[id].copy()
@@ -123,9 +124,13 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
             text=samples,
             OHE=self.OHE,
             specs=(
-                np.tile(self.specs[id], (len(samples), 1, 1))
-                if not replacespecifier
-                else sample_specs
+                None
+                if self.specs is None
+                else (
+                    np.tile(self.specs[id], (len(samples), 1, 1))
+                    if not replacespecifier
+                    else sample_specs
+                )
             ),
             batch_size=batch_size,
             add_special_tokens=self.OHE is None,
