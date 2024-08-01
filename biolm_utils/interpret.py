@@ -80,6 +80,7 @@ def loo_scores(
                 batch_size=args.batchsize,
                 replacement_lists=args.replacementlists,
                 replacespecifier=args.replacespecifier,
+                dev=args.dev,
             )
         )
         token_list = [x.replace("Ġ", "") for x in token_list]

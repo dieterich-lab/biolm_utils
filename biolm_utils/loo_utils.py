@@ -31,6 +31,7 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
         batch_size=8,
         replacement_lists=None,
         replacespecifier=False,
+        dev=False,
     ):
 
         _, logits = self.helper._forward(
@@ -69,8 +70,11 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
         if handle_tokens == "replace":
             replacements = list()
 
-        for occ_idx in range(len(input_ids[:10])):
-            # for occ_idx in range(len(input_ids)):
+        if not dev:
+            input_len = len(input_ids)
+        else:
+            input_len = 10
+        for occ_idx in range(input_len):
             sample = copy.copy(input_ids)
             if handle_tokens == "replace":
                 occ_token = self.tokenizer.convert_ids_to_tokens(sample[occ_idx])
