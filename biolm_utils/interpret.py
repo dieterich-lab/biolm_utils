@@ -13,7 +13,7 @@ import shap
 from biolm_utils.config import get_config
 from biolm_utils.entry import DATASET_CLS, DATASETFILE, TOKENIZERFILE
 from biolm_utils.loo_utils import TauLOO_Evaluation_For_Regression
-from biolm_utils.train_utils import get_dataset, get_model, get_tokenizer
+from biolm_utils.train_utils import get_dataset, get_model_and_config, get_tokenizer
 
 
 def loo_scores(
@@ -34,23 +34,35 @@ def loo_scores(
     nlabels = 1
 
     # Getting the config.
-    model_config = model_cls.get_config(
-        args=args,
-        config_cls=config.CONFIG_CLS,
-        tokenizer=tokenizer,
-        dataset=test_dataset.dataset,
-        nlabels=nlabels,
-    )
-
-    model = get_model(
+    # model_config = model_cls.get_config(
+    #     args=args,
+    #     config_cls=config.CONFIG_CLS,
+    #     tokenizer=tokenizer,
+    #     dataset=test_dataset.dataset,
+    #     nlabels=nlabels,
+    # )
+    model = get_model_and_config(
         args=args,
         model_cls=model_cls,
+        model_config_cls=config.CONFIG_CLS,
         tokenizer=tokenizer,
-        config=model_config,
+        dataset=test_dataset,
+        nlabels=nlabels,
+        # model_config=model_config,
         model_load_path=model_load_path,
         pretraining_required=config.PRETRAINING_REQUIRED,
         scaler=test_dataset.dataset.scaler,
     )
+
+    # model = get_model_and_config(
+    #     args=args,
+    #     model_cls=model_cls,
+    #     tokenizer=tokenizer,
+    #     model_config=model_config,
+    #     model_load_path=model_load_path,
+    #     pretraining_required=config.PRETRAINING_REQUIRED,
+    #     scaler=test_dataset.dataset.scaler,
+    # )
 
     # Send the model to the proper device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

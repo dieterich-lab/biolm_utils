@@ -202,11 +202,14 @@ def create_reports(test_dataset, test_results, scaler, report_path, rank_path):
     report_df.to_csv(report_path, index=False)
 
 
-def get_model(
+def get_model_and_config(
     args,
     model_cls,
+    model_config_cls,
     tokenizer,
-    config,
+    dataset,
+    nlabels,
+    # model_config,
     model_load_path,
     pretraining_required,
     scaler=None,
@@ -214,13 +217,20 @@ def get_model(
     if args.mode == "pre-train" or (
         args.mode == "fine-tune" and (not pretraining_required or args.fromscratch)
     ):
+        model_config = model_cls.get_config(
+            args=args,
+            config_cls=model_config_cls,
+            tokenizer=tokenizer,
+            dataset=dataset,
+            nlabels=nlabels,
+        )
         if not args.resume:
             logger.info(f"Initializing new {model_cls} model for pre-training.")
         else:
             logger.info(
                 f"Initializing new {model_cls} model for later loading of pre-trained parameters."
             )
-        model = model_cls(config=config)
+        model = model_cls(config=model_config)
         if args.mode == "pre-train":
             model.resize_token_embeddings(len(tokenizer))
         else:
@@ -236,9 +246,10 @@ def get_model(
             n_epochs = trainer_state["epoch"]
         except:
             n_epochs = "unknown"
+        model_config = model_config_cls.from_pretrained(model_load_path)
         model = model_cls.from_pretrained(
             model_load_path,
-            config=config,
+            config=model_config,
             use_safetensors=False,
         )
         logger.info(

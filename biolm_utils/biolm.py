@@ -25,7 +25,7 @@ from biolm_utils.train_utils import (
     compute_metrics_for_regression,
     create_reports,
     get_dataset,
-    get_model,
+    get_model_and_config,
     get_tokenizer,
     get_trainer,
 )
@@ -78,21 +78,24 @@ def train(
     else:  # regression tasks
         nlabels = 1
 
-    # Getting the config.
-    model_config = model_cls.get_config(
-        args=args,
-        config_cls=config.CONFIG_CLS,
-        tokenizer=tokenizer,
-        dataset=DATASET,
-        nlabels=nlabels,
-    )
+    # # Getting the config.
+    # model_config = model_cls.get_config(
+    #     args=args,
+    #     config_cls=config.CONFIG_CLS,
+    #     tokenizer=tokenizer,
+    #     dataset=DATASET,
+    #     nlabels=nlabels,
+    # )
 
     # Getting the model.
-    model = get_model(
+    model = get_model_and_config(
         args=args,
         model_cls=model_cls,
-        tokenizer=tokenizer,
-        config=model_config,
+        model_config_cls=config.CONFIG_CLS,
+        tokenizer=TOKENIZER,
+        dataset=DATASET,
+        nlabels=nlabels,
+        # model_config=model_config,
         model_load_path=model_load_path,
         pretraining_required=config.PRETRAINING_REQUIRED,
         scaler=train_dataset.dataset.scaler,
@@ -208,18 +211,21 @@ def test(
 
     # Load the pre-trained model if not given.
     if model is None:
-        model_config = model_cls.get_config(
+        # model_config = model_cls.get_config(
+        #     args=args,
+        #     config_cls=config.CONFIG_CLS,
+        #     tokenizer=TOKENIZER,
+        #     dataset=DATASET,
+        #     nlabels=nlabels,
+        # )
+        model = get_model_and_config(
             args=args,
-            config_cls=config.CONFIG_CLS,
+            model_cls=model_cls,
+            model_config_cls=config.CONFIG_CLS,
             tokenizer=TOKENIZER,
             dataset=DATASET,
             nlabels=nlabels,
-        )
-        model = get_model(
-            args=args,
-            model_cls=model_cls,
-            tokenizer=TOKENIZER,
-            config=model_config,
+            # model_config=model_config,
             model_load_path=model_load_path,
             pretraining_required=config.PRETRAINING_REQUIRED,
             scaler=test_dataset.dataset.scaler,
@@ -258,7 +264,10 @@ def test(
     evaluator.save_metrics("test", test_results.metrics)
 
     # Create the reports
-    scaler = model.scaler
+    try:
+        scaler = model.scaler
+    except:
+        scaler = test_dataset.dataset.scaler
     create_reports(test_dataset, test_results, scaler, report_file, rank_file)
 
     if hasattr(test_dataset.dataset, "labels"):
