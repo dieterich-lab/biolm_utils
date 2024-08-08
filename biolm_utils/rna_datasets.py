@@ -190,15 +190,6 @@ class RNABaseDataset(Dataset):
             is_split_into_words=args.encoding in ["3mer", "5mer"],
         )["input_ids"]
 
-        # # Define a one-hot encoder
-        # non_special_vocab = [
-        #     v
-        #     for k, v in self.tokenizer.vocab.items()
-        #     if k not in self.tokenizer.special_tokens_map.values()
-        # ]
-        # self.OHE = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
-        # self.OHE.fit([[x] for x in non_special_vocab])
-
         self.examples = np.array([{"input_ids": e} for e in encodings])
 
         # TODO: Make this a model attribute
