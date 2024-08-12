@@ -213,13 +213,6 @@ def test(
 
     # Load the pre-trained model if not given.
     if model is None:
-        # model_config = model_cls.get_config(
-        #     args=args,
-        #     config_cls=config.CONFIG_CLS,
-        #     tokenizer=TOKENIZER,
-        #     dataset=DATASET,
-        #     nlabels=nlabels,
-        # )
         model = get_model_and_config(
             args=args,
             model_cls=model_cls,
@@ -227,7 +220,6 @@ def test(
             tokenizer=TOKENIZER,
             dataset=DATASET,
             nlabels=nlabels,
-            # model_config=model_config,
             model_load_path=model_load_path,
             pretraining_required=config.PRETRAINING_REQUIRED,
             scaler=test_dataset.dataset.scaler,
