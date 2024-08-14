@@ -7,10 +7,15 @@ from transformers import Trainer
 
 from biolm_utils.params import parse_args
 from biolm_utils.rna_datasets import RNACNNDataset, RNALanguageDataset
-from biolm_utils.train_utils import (compute_metrics_for_classification,
-                                     compute_metrics_for_regression)
-from biolm_utils.trainer import (RegressionTrainer, WeightedRegressionTrainer,
-                                 WeightedSamplingTrainer)
+from biolm_utils.train_utils import (
+    compute_metrics_for_classification,
+    compute_metrics_for_regression,
+)
+from biolm_utils.trainer import (
+    RegressionTrainer,
+    WeightedRegressionTrainer,
+    WeightedSamplingTrainer,
+)
 
 # Get the arguments from the command line.
 args = parse_args()
@@ -25,9 +30,14 @@ if args.outputpath is None:
 OUTPUTPATH = Path(args.outputpath)
 OUTPUTPATH.mkdir(parents=True, exist_ok=True)
 
-MODELLOADPATH = None
 TOKENIZERFILE = OUTPUTPATH / "tokenizer.json"
-MODELLOADPATH = OUTPUTPATH / "fine-tune"
+
+if args.mode == "fine-tune":
+    MODELLOADPATH = OUTPUTPATH / "pre-train"
+elif args.mode in ["interpret", "test"]:
+    MODELLOADPATH = OUTPUTPATH / "fine-tune"
+else:
+    MODELLOADPATH = None
 
 # `pretrainedmodel` changes either:
 # - different tokenizer when pre-training
