@@ -317,7 +317,7 @@ def get_model_and_config(
         except:
             n_epochs = "unknown"
         model_config = model_config_cls.from_pretrained(model_load_path)
-        model_config.num_labels = int(bool(nlabels))
+        model_config.num_labels = int(nlabels)
         model = model_cls.from_pretrained(
             model_load_path,
             config=model_config,

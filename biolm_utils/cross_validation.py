@@ -66,7 +66,7 @@ def parametrized_decorator(params, dataset):
                         MODELLOADPATH = MODELLOADPATH / f"{val_split}"
 
                     # Define the validation split id.
-                    val_split = (val_split - 1) % len(split_dict)
+                    # val_split = (val_split - 1) % len(split_dict)
 
                     # Get the validation and test idx.
                     val_idx = split_dict[val_split]
@@ -87,7 +87,8 @@ def parametrized_decorator(params, dataset):
                         val_dataset = Subset(dataset, val_idx)
                         # test_dataset = Subset(dataset, test_idx)
                     else:
-                        train_dataset = val_dataset = test_dataset = Subset(
+                        # train_dataset = val_dataset = test_dataset = Subset(
+                        train_dataset = val_dataset = Subset(
                             dataset, np.arange(len(dataset))
                         )
 

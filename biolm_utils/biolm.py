@@ -40,7 +40,13 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 # Set a fixed value for the hash seed
 os.environ["PYTHONHASHSEED"] = str(0)
-print(f"Random seed set as {0}")
+logging(f"Random seed set as {0}")
+logging(
+    f"GPU available: {torch.cuda.is_available()}. "
+    + f"Number of devices: {torch.cuda.device_count()}."
+    if torch.cuda.device_count()
+    else ""
+)
 
 
 config = get_config()
