@@ -229,7 +229,7 @@ class RNABaseDataset(Dataset):
                     self.qualities = [qual_dict[x] for x in qualities]
 
                 self.labels = self.scaler.fit_transform(
-                    np.array(self.labels).reshape(-1, 1).astype(float)
+                    np.array(labels).reshape(-1, 1).astype(float)
                 )
             elif args.task == "classification":
                 labels = [
