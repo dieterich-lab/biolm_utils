@@ -6,7 +6,8 @@ from pathlib import Path
 from transformers import Trainer
 
 from biolm_utils.params import parse_args
-from biolm_utils.rna_datasets import RNACNNDataset, RNALanguageDataset
+
+# from biolm_utils.rna_datasets import RNACNNDataset, RNALanguageDataset
 from biolm_utils.train_utils import (
     compute_metrics_for_classification,
     compute_metrics_for_regression,
