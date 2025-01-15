@@ -25,14 +25,18 @@ def parametrized_decorator(params, dataset):
     def cv_wrapper(func):
         if params.mode == "tokenize":
 
-            def non_cross_validate(*args, **kwargs):
+            def tokenize(*args, **kwargs):
                 res = func(None, None, None, None, None)
                 return res
 
-            return non_cross_validate
+            return tokenize
 
         # For the following configurations, we actually do cross validation.
-        if params.mode not in ["pre-train", "predict"] and params.splitpos is not None:
+        if (
+            params.mode not in ["pre-train", "predict"]
+            and params.splitpos is not None
+            and params.splitpos is not False
+        ):
             # Seperate the data splits into a dictionary.
             split_dict = defaultdict(list)
             for i, line in enumerate(dataset.lines):
