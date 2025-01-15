@@ -346,8 +346,20 @@ def run(
                 model_save_path=model_save_path,
                 tokenizer=TOKENIZER,
             )
-            return eval_results
+            if args.mode == "pre-train":
+                return eval_results
+            else:
+                test_results = test(
+                    model_cls=model_cls,
+                    test_dataset=test_dataset,
+                    data_collator=data_collator,
+                    model_load_path=model_save_path,
+                    report_file=report_file,
+                    rank_file=rank_file,
+                )
+            return test_results
         # Testing (inference) an already trained model or test on the splits.
+        # elif args.mode in ["fine-tune", "predict"]:
         elif args.mode == "predict":
             test_results = test(
                 model_cls=model_cls,

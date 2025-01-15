@@ -49,32 +49,36 @@ def parametrized_decorator(params, dataset):
 
                 # This list collects the results of the individual splits.
                 results = list()
-                for val_split in range(len(split_dict)):
-                    # for test_split in range(len(split_dict)):
+                # for val_split in range(len(split_dict)):
+                for test_split in range(len(split_dict)):
 
                     # We'll change the paths to save model and outputs for each split seperately.
-                    MODELSAVEPATH = MODELSAVEPATH / f"{val_split}"
-                    OUTPUTPATH = OUTPUTPATH / f"{val_split}"
-                    REPORTFILE = REPORTFILE.parent / f"{val_split}" / REPORTFILE.name
-                    # MODELSAVEPATH = MODELSAVEPATH / f"{test_split}"
-                    # OUTPUTPATH = OUTPUTPATH / f"{test_split}"
-                    # REPORTFILE = REPORTFILE.parent / f"{test_split}" / REPORTFILE.name
+                    # MODELSAVEPATH = MODELSAVEPATH / f"{val_split}"
+                    # OUTPUTPATH = OUTPUTPATH / f"{val_split}"
+                    # REPORTFILE = REPORTFILE.parent / f"{val_split}" / REPORTFILE.name
+                    MODELSAVEPATH = MODELSAVEPATH / f"{test_split}"
+                    OUTPUTPATH = OUTPUTPATH / f"{test_split}"
+                    REPORTFILE = REPORTFILE.parent / f"{test_split}" / REPORTFILE.name
 
+                    # if params.mode == "fine-tune":
+                    #     RANKFILE = RANKFILE.parent / f"{val_split}" / RANKFILE.name
+                    # if params.mode == "interpret":
+                    #     MODELLOADPATH = MODELLOADPATH / f"{val_split}"
                     if params.mode == "fine-tune":
-                        RANKFILE = RANKFILE.parent / f"{val_split}" / RANKFILE.name
+                        RANKFILE = RANKFILE.parent / f"{test_split}" / RANKFILE.name
                     if params.mode == "interpret":
-                        MODELLOADPATH = MODELLOADPATH / f"{val_split}"
+                        MODELLOADPATH = MODELLOADPATH / f"{test_split}"
 
                     # Define the validation split id.
-                    # val_split = (val_split - 1) % len(split_dict)
+                    val_split = (test_split - 1) % len(split_dict)
 
                     # Get the validation and test idx.
                     val_idx = split_dict[val_split]
-                    # test_idx = split_dict[val_split]
+                    test_idx = split_dict[test_split]
 
                     # Define the trianing split idx.
-                    train_splits = set(range(len(split_dict))) - {val_split}
-                    # train_splits = set(range(len(split_dict))) - {val_split, test_split}
+                    # train_splits = set(range(len(split_dict))) - {val_split}
+                    train_splits = set(range(len(split_dict))) - {val_split, test_split}
                     train_idx = list()
 
                     # Collect the training idx.
@@ -85,11 +89,12 @@ def parametrized_decorator(params, dataset):
                     if not params.dev:
                         train_dataset = Subset(dataset, train_idx)
                         val_dataset = Subset(dataset, val_idx)
-                        # test_dataset = Subset(dataset, test_idx)
+                        test_dataset = Subset(dataset, test_idx)
                     else:
-                        # train_dataset = val_dataset = test_dataset = Subset(
-                        train_dataset = val_dataset = Subset(
-                            dataset, np.arange(len(dataset))
+                        train_dataset = val_dataset = test_dataset = Subset(
+                            # train_dataset = val_dataset = Subset(
+                            dataset,
+                            np.arange(len(dataset)),
                         )
 
                     # Logging for classification tasks can be helpful.
@@ -106,18 +111,18 @@ def parametrized_decorator(params, dataset):
                                 for x in val_dataset.indices
                             ]
                         )
-                        # test_counter = Counter(
-                        #     [
-                        #         dataset.LE.classes_[dataset[x]["labels"]]
-                        #         for x in test_dataset.indices
-                        #     ]
-                        # )
+                        test_counter = Counter(
+                            [
+                                dataset.LE.classes_[dataset[x]["labels"]]
+                                for x in test_dataset.indices
+                            ]
+                        )
                         logger.info("Label distribution:")
                         logger.info(train_counter)
                         logger.info(val_counter)
-                        # logger.info(test_counter)
+                        logger.info(test_counter)
 
-                    logger.info(f"Split {val_split}")
+                    logger.info(f"Split {test_split}")
                     logger.info(
                         f"Len train dataset: {len(train_dataset)}, len val dataset: {len(val_dataset)}"
                     )
@@ -126,7 +131,7 @@ def parametrized_decorator(params, dataset):
                     res = func(
                         train_dataset,
                         val_dataset,
-                        None,
+                        test_dataset,
                         MODELLOADPATH,
                         MODELSAVEPATH,
                         REPORTFILE,
