@@ -5,32 +5,11 @@ import tempfile
 
 import numpy as np
 import pandas as pd
-import torch
 import transformers
-from sklearn.preprocessing import (
-    LabelEncoder,
-    MinMaxScaler,
-    OneHotEncoder,
-    StandardScaler,
-)
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 from torch.utils.data import Dataset
 
-
-class LogScaler:
-    def fit_transform(self, data):
-        return np.log(data)
-
-    def inverse_transform(self, data):
-        return np.exp(data)
-
-
-# Not pretty but complies best with the rest of the code.
-class IdentityScaler:
-    def fit_transform(self, data):
-        return data
-
-    def inverse_transform(self, data):
-        return data
+from biolm_utils.train_utils import IdentityScaler, LogScaler
 
 
 class RNABaseDataset(Dataset):

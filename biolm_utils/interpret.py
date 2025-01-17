@@ -14,7 +14,7 @@ from biolm_utils.config import get_config
 
 # from biolm_utils.entry import DATASET_CLS, DATASETFILE, TOKENIZERFILE
 from biolm_utils.loo_utils import TauLOO_Evaluation_For_Regression
-from biolm_utils.train_utils import get_dataset, get_model_and_config, get_tokenizer
+from biolm_utils.train_utils import get_model_and_config
 
 
 def loo_scores(
@@ -44,7 +44,7 @@ def loo_scores(
         nlabels=nlabels,
         model_load_path=model_load_path,
         pretraining_required=config.PRETRAINING_REQUIRED,
-        scaler=test_dataset.dataset.scaler,
+        scaler=None,
     )
 
     # Send the model to the proper device
@@ -71,9 +71,9 @@ def loo_scores(
                 id=test_id,
                 remove_first_last=remove_first_last,
                 handle_tokens=args.handletokens,
-                scaler=test_dataset.dataset.scaler,
+                scaler=model.scaler,
                 batch_size=args.batchsize,
-                replacement_lists=args.replacementlists,
+                replacement_dict=args.replacementdict,
                 replacespecifier=args.replacespecifier,
                 dev=args.dev,
             )
@@ -95,7 +95,7 @@ def loo_scores(
             loo_scores.append(exp)
 
         label = test_dataset.dataset[test_id]["labels"]
-        rescaled_label = test_dataset.dataset.scaler.inverse_transform(label)
+        rescaled_label = model.scaler.inverse_transform(label)
         seq = test_dataset.dataset.seq_idx[test_id]
         if replacements is not None:
             token_list = [x[0] for x in loo_scores[-1]]

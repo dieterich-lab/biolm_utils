@@ -275,10 +275,10 @@ def parse_args(*args):
         help="How to handle 'missing' tokens during interpretability calculations.",
     )
     parser.add_argument(
-        "--replacementlists",
+        "--replacementdict",
         default=None,
         type=eval,
-        help="List of lists of atomic tokens that should be replaced against each other if `--handletokens` is set to `replace`.",
+        help="Dict of atomic tokens that should be replaced against each other if `--handletokens` is set to `replace`.",
     )
     parser.add_argument(
         "--replacespecifier",

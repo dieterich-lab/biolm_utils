@@ -22,6 +22,23 @@ from transformers import EarlyStoppingCallback
 logger = logging.getLogger(__name__)
 
 
+class LogScaler:
+    def fit_transform(self, data):
+        return np.log(data)
+
+    def inverse_transform(self, data):
+        return np.exp(data)
+
+
+# Not pretty but complies best with the rest of the code.
+class IdentityScaler:
+    def fit_transform(self, data):
+        return data
+
+    def inverse_transform(self, data):
+        return data
+
+
 def compute_metrics_for_regression(dataset, savepath):
     def _compute_metrics(pred):
         logits, labels = pred
@@ -76,6 +93,30 @@ def compute_metrics_for_classification(dataset, savepath):
 def get_tokenizer(args, tokenizer_file, tokenizer_cls):
 
     if args.mode != "pre-train" or args.pretrainedmodel:
+        try:
+            with open(
+                tokenizer_file.parent / "pre-train" / "tokenizer_config.json", "r"
+            ) as ff:
+                tok_config = json.load(ff)
+                trunc_side = tok_config["truncation_side"]
+                model_max_len = tok_config["model_max_length"]
+                cls_token = tok_config["cls_token"]
+                unk_token = tok_config["unk_token"]
+                mask_token = tok_config["mask_token"]
+                pad_token = tok_config["pad_token"]
+                sep_token = tok_config["sep_token"]
+                eos_token = tok_config["eos_token"]
+                bos_token = tok_config["bos_token"]
+        except FileNotFoundError:
+            mask_token = "[MASK]"
+            cls_token = "[CLS]"
+            unk_token = "[UNK]"
+            pad_token = "[PAD]"
+            sep_token = "[SEP]"
+            bos_token = "[BOS]"
+            eos_token = "[EOS]"
+            model_max_len = args.blocksize
+            trunc_side = ("left" if args.lefttailing else "right",)
         with open(tokenizer_file, "r") as f:
             tokenizer_json = json.load(f)
         # Remove the meta data left and right correctly
@@ -97,16 +138,16 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls):
             tmp.seek(0)
             tokenizer = tokenizer_cls(
                 tokenizer_file=tmp.name,
-                mask_token="[MASK]",
-                cls_token="[CLS]",
-                unk_token="[UNK]",
-                pad_token="[PAD]",
-                sep_token="[SEP]",
-                bos_token="[BOS]",
-                eos_token="[EOS]",
-                model_max_length=args.blocksize,
+                mask_token=mask_token,
+                cls_token=cls_token,
+                unk_token=unk_token,
+                pad_token=pad_token,
+                sep_token=sep_token,
+                bos_token=bos_token,
+                eos_token=eos_token,
+                model_max_length=model_max_len,
                 truncation=True,
-                truncation_side="left" if args.lefttailing else "right",
+                truncation_side=trunc_side,
             )
     else:  # pre-training data is the same as the data for tokenizing
         logger.info(f"Loading tokenizer from {tokenizer_file}")
@@ -279,7 +320,6 @@ def get_model_and_config(
     tokenizer,
     dataset,
     nlabels,
-    # model_config,
     model_load_path,
     pretraining_required,
     scaler=None,
@@ -303,8 +343,6 @@ def get_model_and_config(
         model = model_cls(config=model_config)
         if args.mode == "pre-train":
             model.resize_token_embeddings(len(tokenizer))
-        else:
-            model.scaler = scaler
     else:
         try:
             with open(Path(model_load_path) / "trainer_state.json") as f:
@@ -323,6 +361,11 @@ def get_model_and_config(
             config=model_config,
             use_safetensors=False,
         )
+        if scaler is not None:
+            model.scaler = scaler
+        else:
+            with open(Path(model_load_path) / "scaler.pkl", "rb") as scaler_file:
+                model.scaler = pickle.load(scaler_file)
         logger.info(
             f"Loaded {model_cls} model with weights from {model_load_path} saved on {datetime.fromtimestamp(model_load_path.stat().st_ctime)} with {n_epochs} epochs trained."
         )

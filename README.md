@@ -177,9 +177,10 @@ tokenization:
   vocabsize: 20_000
   minfreq: 2
   atomicreplacements: None # dictionary of replacements, i.e. `{"a": "A", "bcd": "xyz"}
+  encoding: atomic # [bpe, atomic]
   bpe:
     maxtokenlength: 10
-  encoding: atomic # [bpe, atomic]
+  lefttailing: True
 ```
 
 Where 
@@ -187,8 +188,10 @@ Where
 - `samplesize` offers the option to downsample your data. If you file has, for example, 10M lines, training a BPE tokenizer on all these might become very costly or computationally infeasible. You can instead give a smaplesize of `250_000` to make the process much faster.
 - `vocabsize`: The maximal size of the vocabulary at the end of the tokenization process.
 - `minfreq`: The minimum frequency that a token should appear in the training file before it is recorded as vocabulary item.
-- `maxtokenlength`: The BPE tokenizer can come up with pretty long tokens. This number caps the length at a maximal length.
 - `atomicreplacements`: This is a dictionary with tokens that should be treated as atomic tokens during the byte pair encoding process. You have to specify both: The initial token and the character that it is to be mapped to. 
+- `encoding`: The actual encding to be apllied. Either characterwise (`atomic`) or using a word piece tokenizer for byte pair encoding (`bpe`).
+- `maxtokenlength`: The BPE tokenizer can come up with pretty long tokens. This number caps the length at a maximal length.
+- `lefttailing`: If true, the sequences will be cut from the left (begging from the right end).
 
 ### Pre-training (language models only) and fine-tuning a model 
 
@@ -230,7 +233,8 @@ To calculate importance scores for indidvidual input tokens, we can use the mode
 
 ```yaml
 looscores:
-  handletokens: remove # remove, mask
+  handletokens: remove # remove, mask, replace
+  replacementdict: None # dict of atomic tokens that should be replaced against each other if `--handletokens` is set to `replace`."
 ```
 
 The scripts will then extract LOO scores for all splits of the fine-tuning data and saves them as `.csv` under the corresponding fine-tuning path as `loo_scores_{handle_tokens}.csv`.

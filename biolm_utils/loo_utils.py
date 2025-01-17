@@ -29,7 +29,7 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
         handle_tokens="remove",
         scaler=None,
         batch_size=8,
-        replacement_lists=None,
+        replacement_dict=None,
         replacespecifier=False,
         dev=False,
     ):
@@ -80,7 +80,7 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
                 occ_token = self.tokenizer.convert_ids_to_tokens(
                     sample[occ_idx]
                 ).replace("Ġ", "")
-                replace_list = [l for l in replacement_lists if occ_token in l][0]
+                replace_list = [l for l in replacement_dict if occ_token in l][0]
                 replace_list = [x for x in replace_list if x != occ_token]
                 if self.specs is not None:
                     _replace_list = list()

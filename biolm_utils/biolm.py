@@ -1,6 +1,8 @@
 import logging
 import os
+import pickle
 import random
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -202,6 +204,8 @@ def train(
     trainer.save_state()
     # Get validation metrics and add the size of the validation set.
     if args.mode != "pre-train":
+        with open(Path(model_save_path) / "scaler.pkl", "wb") as scaler_file:
+            pickle.dump(model.scaler, scaler_file)
         eval_metrics = trainer.evaluate()
         eval_metrics["eval_samples"] = len(val_dataset)
 
@@ -244,7 +248,7 @@ def test(
             nlabels=nlabels,
             model_load_path=model_load_path,
             pretraining_required=config.PRETRAINING_REQUIRED,
-            scaler=test_dataset.dataset.scaler,
+            scaler=None,
         )
 
     # Define the test arguments.
@@ -295,12 +299,7 @@ def test(
     evaluator.log_metrics("test", test_results.metrics)
     evaluator.save_metrics("test", test_results.metrics)
 
-    # Create the reports
-    try:
-        scaler = model.scaler
-    except:
-        scaler = test_dataset.dataset.scaler
-    create_reports(test_dataset, test_results, scaler, report_file, rank_file)
+    create_reports(test_dataset, test_results, model.scaler, report_file, rank_file)
 
     # if hasattr(test_dataset.dataset, "labels"):
     if args.task == "regression":
