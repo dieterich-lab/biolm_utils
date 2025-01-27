@@ -129,9 +129,28 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls):
             "Regex"
         ] = f"{args.columnsep}.*"
         if args.tokensep is not None:
-            tokenizer_json["normalizer"]["normalizers"][-2]["pattern"][
-                "String"
-            ] = args.tokensep
+            # Last position (-1) is for stripping the quotation marks.
+            # We need to include the new tokensep replacement before.
+            num_elements = len(tokenizer_json["normalizer"]["normalizers"])
+            if (
+                num_elements > 1
+            ):  # this means a previous replacement with args.tokensep exists
+                tokenizer_json["normalizer"]["normalizers"][-2]["pattern"][
+                    "String"
+                ] = args.tokensep
+            else:  # here, we have to create a new one
+                if args.encoding == "bpe":
+                    replacement = ""
+                elif args.encoding == "atomic":
+                    replacement = " "
+                pattern = (
+                    {
+                        "type": "Replace",
+                        "pattern": {"String": args.tokensep},
+                        "content": replacement,
+                    },
+                )
+                tokenizer_json["normalizer"]["normalizers"].insert(0, pattern)
         # unfortunately we need to temporarily save the tokenizer as
         # XlnetTokenizerFast is deprived of the ability to load serialized tokenizers
         with tempfile.NamedTemporaryFile("r+") as tmp:
