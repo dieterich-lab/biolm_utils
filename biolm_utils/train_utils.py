@@ -381,12 +381,13 @@ def get_model_and_config(
             config=model_config,
             use_safetensors=False,
         )
+        logger.info(
+            f"Loaded {model_cls} model with weights from {model_load_path} saved on {datetime.fromtimestamp(model_load_path.stat().st_ctime)} with {n_epochs} epochs trained."
+        )
+    if args.mode != "pre-train":
         if scaler is not None:
             model.scaler = scaler
         else:
             with open(Path(model_load_path) / "scaler.pkl", "rb") as scaler_file:
                 model.scaler = pickle.load(scaler_file)
-        logger.info(
-            f"Loaded {model_cls} model with weights from {model_load_path} saved on {datetime.fromtimestamp(model_load_path.stat().st_ctime)} with {n_epochs} epochs trained."
-        )
     return model

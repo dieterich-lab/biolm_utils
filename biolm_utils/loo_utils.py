@@ -80,8 +80,10 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
                 occ_token = self.tokenizer.convert_ids_to_tokens(
                     sample[occ_idx]
                 ).replace("Ġ", "")
-                replace_list = [l for l in replacement_dict if occ_token in l][0]
-                replace_list = [x for x in replace_list if x != occ_token]
+                if occ_token in replacement_dict:
+                    replace_list = replacement_dict[occ_token]
+                else:
+                    replace_list = []
                 if self.specs is not None:
                     _replace_list = list()
                     for t in replace_list:

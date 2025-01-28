@@ -10,7 +10,7 @@ from transformers import DefaultDataCollator, TrainerState, TrainingArguments
 
 from biolm_utils.config import get_config
 from biolm_utils.cross_validation import parametrized_decorator
-from biolm_utils.entry import (  # DATASET_CLS,
+from biolm_utils.entry import (
     CHECKPOINTPATH,
     CLASSIFICATIONTRAINER_CLS,
     DATASETFILE,
@@ -317,7 +317,6 @@ def run(
     model_save_path,
     report_file=None,
     rank_file=None,
-    output_path=None,
 ):
 
     if args.mode == "tokenize":
@@ -381,7 +380,7 @@ def run(
                 model_cls=model_cls,
                 test_dataset=test_dataset,
                 model_load_path=model_load_path,
-                output_path=output_path,
+                output_path=model_save_path,
                 remove_first_last=config.ADD_SPECIAL_TOKENS,
             )
             return scores

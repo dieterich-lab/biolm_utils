@@ -240,7 +240,6 @@ def parametrized_decorator(params, dataset):
                     MODELSAVEPATH,
                     REPORTFILE,
                     RANKFILE,
-                    OUTPUTPATH,
                 )
                 return res
 
