@@ -18,10 +18,10 @@ def geq_one(value):
 
 
 def parse_args(*args):
-    parser = argparse.ArgumentParser(prog="biolm", add_help=True)
+    mode_parser = argparse.ArgumentParser(prog="biolm", add_help=False)
 
     # Following are the main parameters for either training a tokenizer or training a model.
-    parser.add_argument(
+    mode_parser.add_argument(
         "mode",
         choices=["tokenize", "pre-train", "fine-tune", "predict", "interpret"],
         help="""
@@ -32,8 +32,11 @@ def parse_args(*args):
         `interpret` = Extraction of loo scores using the fine-tuned model on the fine-tuning dataset.
         """,
     )
+    mode, _ = mode_parser.parse_known_args()
+    parser = argparse.ArgumentParser(parents=[mode_parser])
     parser.add_argument(
         "--task",
+        required=mode.mode != "tokenize",
         choices=["regression", "classification"],
         help="""
         Determines the kind of training (with correct choice of loss function, trainer and so on).
