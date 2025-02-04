@@ -355,7 +355,10 @@ def get_model_and_config(
             nlabels=nlabels,
         )
         if not args.resume:
-            logger.info(f"Initializing new {model_cls} model for pre-training.")
+            if args.mode == "pre-train":
+                logger.info(f"Initializing new {model_cls} model for pre-training.")
+            else:
+                logger.info(f"Initializing new {model_cls} model for fine-tuning.")
         else:
             logger.info(
                 f"Initializing new {model_cls} model for later loading of pre-trained parameters."

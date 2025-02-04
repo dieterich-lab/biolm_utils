@@ -214,9 +214,9 @@ def train(
 
         if hasattr(train_dataset.dataset, "labels"):
             if args.task == "classification":
-                return eval_metrics["eval_f1"]
+                return eval_metrics["eval_f1"], model
             else:
-                return eval_metrics["eval_spearman rho"]
+                return eval_metrics["eval_spearman rho"], model
 
 
 def test(
@@ -335,7 +335,7 @@ def run(
             data_collator = DefaultDataCollator()
         # Pre-training and fine-tuning.
         if args.mode in ["pre-train", "fine-tune"]:
-            eval_results = train(
+            eval_results, model = train(
                 model_cls=model_cls,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
@@ -352,7 +352,7 @@ def run(
                 return eval_results
             else:
                 test_results = test(
-                    model_cls=model_cls,
+                    model=model,
                     test_dataset=test_dataset,
                     data_collator=data_collator,
                     model_load_path=model_save_path,
