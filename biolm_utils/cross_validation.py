@@ -32,11 +32,7 @@ def parametrized_decorator(params, dataset):
             return tokenize
 
         # For the following configurations, we actually do cross validation.
-        if (
-            params.mode not in ["pre-train", "predict"]
-            and params.splitpos is not None
-            and params.splitpos is not False
-        ):
+        if params.mode not in ["pre-train", "predict"] and params.splitpos:
             # Seperate the data splits into a dictionary.
             split_dict = defaultdict(list)
             for i, line in enumerate(dataset.lines):
@@ -57,17 +53,10 @@ def parametrized_decorator(params, dataset):
                 for test_split in range(len(split_dict)):
 
                     # We'll change the paths to save model and outputs for each split seperately.
-                    # MODELSAVEPATH = MODELSAVEPATH / f"{val_split}"
-                    # OUTPUTPATH = OUTPUTPATH / f"{val_split}"
-                    # REPORTFILE = REPORTFILE.parent / f"{val_split}" / REPORTFILE.name
                     MODELSAVEPATH = MODELSAVEPATH / f"{test_split}"
                     OUTPUTPATH = OUTPUTPATH / f"{test_split}"
                     REPORTFILE = REPORTFILE.parent / f"{test_split}" / REPORTFILE.name
 
-                    # if params.mode == "fine-tune":
-                    #     RANKFILE = RANKFILE.parent / f"{val_split}" / RANKFILE.name
-                    # if params.mode == "interpret":
-                    #     MODELLOADPATH = MODELLOADPATH / f"{val_split}"
                     if params.mode == "fine-tune":
                         RANKFILE = RANKFILE.parent / f"{test_split}" / RANKFILE.name
                     if params.mode == "interpret":
@@ -81,7 +70,6 @@ def parametrized_decorator(params, dataset):
                     test_idx = split_dict[test_split]
 
                     # Define the trianing split idx.
-                    # train_splits = set(range(len(split_dict))) - {val_split}
                     train_splits = set(range(len(split_dict))) - {val_split, test_split}
                     train_idx = list()
 
@@ -96,7 +84,6 @@ def parametrized_decorator(params, dataset):
                         test_dataset = Subset(dataset, test_idx)
                     else:
                         train_dataset = val_dataset = test_dataset = Subset(
-                            # train_dataset = val_dataset = Subset(
                             dataset,
                             np.arange(len(dataset)),
                         )
@@ -199,22 +186,54 @@ def parametrized_decorator(params, dataset):
                 idx = np.arange(len(dataset))
                 np.random.shuffle(idx)
 
-                train_idx, val_idx = (
-                    idx[: int(len(idx) * 0.9)],
-                    idx[int(len(idx) * 0.9) :],
-                )
+                if len(params.splitratio) < 3:
+                    train_idx, val_idx = (
+                        idx[: int(len(idx) * params.splitratio[0] / 100)],
+                        idx[-int(len(idx) * params.splitratio[1] / 100) :],
+                    )
+                else:
+                    train_idx, val_idx, test_idx = (
+                        idx[: int(len(idx) * params.splitratio[0] / 100)],
+                        idx[
+                            int(len(idx) * params.splitratio[0] / 100) : int(
+                                len(idx) * params.splitratio[0] / 100
+                            )
+                            + int(len(idx) * params.splitratio[1] / 100)
+                        ],
+                        idx[
+                            int(len(idx) * params.splitratio[0] / 100)
+                            + int(len(idx) * params.splitratio[1] / 100) :
+                        ],
+                    )
 
+                test_dataset = None
                 if not params.dev:
                     train_dataset = Subset(dataset, train_idx)
                     val_dataset = Subset(dataset, val_idx)
+                    if len(params.splitratio) == 3:
+                        test_dataset = Subset(dataset, test_idx)
                 # These are debugging settings.
                 else:
                     train_dataset = val_dataset = Subset(dataset, idx)
+                    if len(params.splitratio) == 3:
+                        test_dataset = Subset(dataset, idx)
 
+                if len(train_dataset) < params.batchsize:
+                    raise Exception(
+                        f"Size of the train dataset ({len(train_dataset)}) is smaller than the batch size, please lower the batch size first."
+                    )
+                if len(val_dataset) < params.batchsize:
+                    raise Exception(
+                        f"Size of the validation dataset ({len(val_dataset)}) is smaller than the batch size, please lower the batch size first."
+                    )
+                if len(test_dataset) < params.batchsize:
+                    raise Exception(
+                        f"Size of the test dataset ({len(test_dataset)}) is smaller than the batch size, please lower the batch size first."
+                    )
                 res = func(
                     train_dataset,
                     val_dataset,
-                    None,
+                    test_dataset,
                     MODELLOADPATH,
                     MODELSAVEPATH,
                     REPORTFILE,

@@ -344,10 +344,8 @@ def run(
                 model_save_path=model_save_path,
                 tokenizer=TOKENIZER,
             )
-            if (
-                args.mode == "pre-train"
-                or args.splitpos == None
-                or args.splitpos == False
+            if args.mode == "pre-train" or (
+                not args.splitpos and len(args.splitratio) < 3
             ):
                 return eval_results
             else:

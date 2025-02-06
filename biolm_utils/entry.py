@@ -22,8 +22,8 @@ from biolm_utils.trainer import (
 args = parse_args()
 
 # Switch off the 'The used dataset had no length, returning gathered tensors. You should drop the remainder yourself.' warning if desired.
-if args.silent:
-    logging.getLogger("accelerate").setLevel(logging.WARNING)
+# if args.silent:
+logging.getLogger("accelerate").setLevel(logging.WARNING)
 
 if args.outputpath is None:
     args.outputpath = Path(args.filepath).stem

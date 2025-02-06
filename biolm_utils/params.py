@@ -1,11 +1,23 @@
 import argparse
+import re
 import sys
 from collections.abc import MutableMapping
 
 import yaml
 
-# def eval_str(x):
-#     return eval(x)
+
+def check_percentage(value):
+    splits = re.findall("\d+", value)
+    splits = list(map(int, splits))
+    if len(splits) > 3:
+        raise argparse.ArgumentTypeError(
+            f"Invalid split ratio: ({splits}). Either 2 (train/val) or 3 splits (train/val/test) percentages must be given."
+        )
+    if sum(splits) != 100:
+        raise argparse.ArgumentTypeError(
+            f"Invalid split ratio: ({splits}). Must sum up to 100"
+        )
+    return splits
 
 
 def geq_one(value):
@@ -20,7 +32,7 @@ def geq_one(value):
 def parse_args(*args):
     mode_parser = argparse.ArgumentParser(prog="biolm", add_help=False)
 
-    # Following are the main parameters for either training a tokenizer or training a model.
+    # Following is the main parameters for either training a tokenizer or using a model.
     mode_parser.add_argument(
         "mode",
         choices=["tokenize", "pre-train", "fine-tune", "predict", "interpret"],
@@ -34,6 +46,7 @@ def parse_args(*args):
     )
     mode, _ = mode_parser.parse_known_args()
     parser = argparse.ArgumentParser(parents=[mode_parser])
+    # Following are the parameters that describe the data and the desired training routine.
     parser.add_argument(
         "--task",
         required=mode.mode != "tokenize",
@@ -92,7 +105,20 @@ def parse_args(*args):
         "--splitpos",
         type=eval,
         default=None,
-        help="The field position of the split identifier of the split. or 'None' if no cross validation is desired.",
+        help="""The field position of the split identifier of the split. or 'None' if no cross validation is desired.
+        If `splitpos` is given, this will be overruled by:
+        - 1 split for testing
+        - 1 split for validation
+        - rest for training
+        """,
+    )
+    parser.add_argument(
+        "--splitratio",
+        type=check_percentage,
+        default=[80, 20],
+        help="""Comma-seprated list describing the desired split ratio for train, validation and (possibly) test split in the format `train_percentage/val_percentage(/test_percentage)`,
+        e.g. `85,15` or `70,20,10`. Must sum up to 100 (see default). Given a third splitratio triggers testing on that split.
+        """,
     )
     parser.add_argument(
         "--labelpos",
