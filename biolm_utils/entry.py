@@ -34,10 +34,10 @@ OUTPUTPATH.mkdir(parents=True, exist_ok=True)
 TOKENIZERFILE = OUTPUTPATH / "tokenizer.json"
 if args.mode == "fine-tune":
     MODELLOADPATH = OUTPUTPATH / "pre-train"
-elif args.mode in ["interpret", "test"]:
+elif args.mode in ["interpret", "predict"]:
     MODELLOADPATH = OUTPUTPATH / "fine-tune"
 else:
-    MODELLOADPATH = None
+    MODELLOADPATH = None  # not needed for pre-training
 
 # `pretrainedmodel` changes either:
 # - different tokenizer when pre-training
@@ -50,10 +50,12 @@ if args.pretrainedmodel:
     else:
         TOKENIZERFILE = Path(args.pretrainedmodel) / "tokenizer.json"
 
-if not args.mode in ["predict", "interpret"]:
-    MODELSAVEPATH = OUTPUTPATH / args.mode
-else:
-    MODELSAVEPATH = OUTPUTPATH
+# if not args.mode in ["predict", "interpret"]:
+#     MODELSAVEPATH = OUTPUTPATH / args.mode
+# else:
+#     MODELSAVEPATH = None  # Not needed for inference tasks
+# MODELSAVEPATH = OUTPUTPATH
+MODELSAVEPATH = OUTPUTPATH / args.mode
 
 if args.mode not in ["tokenize", "predict", "interpret"]:
     MODELSAVEPATH.mkdir(parents=True, exist_ok=True)
@@ -65,12 +67,19 @@ LOGPATH.mkdir(parents=True, exist_ok=True)
 if args.mode not in ["tokenize", "predict", "interpret"]:
     TBPATH.mkdir(parents=True, exist_ok=True)
 
-if args.mode in ["predict", "interpret"]:
-    DATASETFILE = OUTPUTPATH / "dataset.json"
-elif args.mode != "interpret":
-    DATASETFILE = OUTPUTPATH / args.mode / "dataset.json"
-else:
+# if args.mode in ["predict", "interpret"]:
+#     DATASETFILE = OUTPUTPATH / "dataset.json"
+# elif args.mode != "interpret":
+#     DATASETFILE = OUTPUTPATH / args.mode / "dataset.json"
+# else:
+# DATASETFILE = OUTPUTPATH / "fine-tune" / "dataset.json"
+
+if args.mode in ["tokenize"]:
+    DATASETFILE = None  # we don't save it when tokenizing
+elif args.mode in ["predict", "interpret"]:
     DATASETFILE = OUTPUTPATH / "fine-tune" / "dataset.json"
+else:
+    DATASETFILE = OUTPUTPATH / args.mode / "dataset.json"
 
 # Set up logging
 now = datetime.now().strftime("%Y-%m-%d_%H:%M")

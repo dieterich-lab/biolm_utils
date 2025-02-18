@@ -70,10 +70,6 @@ class TauLOO_Evaluation_For_Regression(TauLOO_Evaluation):
         if handle_tokens == "replace":
             replacements = list()
 
-        if not dev:
-            input_len = len(input_ids)
-        else:
-            input_len = 10
         for occ_idx in range(input_len):
             sample = copy.copy(input_ids)
             if handle_tokens == "replace":

@@ -226,7 +226,7 @@ def parametrized_decorator(params, dataset):
                     raise Exception(
                         f"Size of the validation dataset ({len(val_dataset)}) is smaller than the batch size, please lower the batch size first."
                     )
-                if len(test_dataset) < params.batchsize:
+                if test_dataset is not None and len(test_dataset) < params.batchsize:
                     raise Exception(
                         f"Size of the test dataset ({len(test_dataset)}) is smaller than the batch size, please lower the batch size first."
                     )

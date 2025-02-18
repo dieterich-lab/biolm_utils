@@ -62,8 +62,9 @@ def loo_scores(
         tokensep=args.tokensep,
     )
 
-    for i, test_id in enumerate(test_idx):
-        logging.info(f"{i}, {test_id}")
+    for i, test_id in enumerate(
+        test_idx[: len(test_idx) if not args.dev else args.dev]
+    ):
         seq = test_dataset.dataset.lines[test_id]
         loo_score, rescaled_pred, token_list, replacements = (
             tl.compute_leave_one_out_occlusion(
@@ -81,11 +82,13 @@ def loo_scores(
         token_list = [x.replace("Ġ", "") for x in token_list]
         scores = list()
         if replacements is not None:
+            score_id = 0
             for j, (token, replacement) in enumerate(zip(token_list, replacements)):
                 for k, rep in enumerate(replacement):
                     scores.append(
-                        (token, rep, loo_score[j + k].item(), rescaled_pred, j)
+                        (token, rep, loo_score[score_id].item(), rescaled_pred, j)
                     )
+                    score_id += 1
             loo_scores.append(scores)
         else:
             # Here, we'll save the scores conveniently as `shap.Explanation` object.
@@ -133,7 +136,6 @@ def loo_scores(
                 else:
                     starts.append(ends[-1])
                     ends.append(ends[-1] + len(token))
-        # assert len(loos) == len(starts) == len(ends)
 
         if replacements is not None:
             data = list(
@@ -188,6 +190,6 @@ def loo_scores(
             df = pd.DataFrame(data)
             df.to_csv(csv_file, index=False, mode="a", header=False)
 
-    logging.info(f"Saving to {pkl_file}")
+    logging.info(f"Saving pickled results: {pkl_file}")
     with open(pkl_file, "wb") as f:
         pickle.dump(loo_scores, f)
