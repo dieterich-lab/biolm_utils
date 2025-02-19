@@ -6,8 +6,6 @@ from pathlib import Path
 from transformers import Trainer
 
 from biolm_utils.params import parse_args
-
-# from biolm_utils.rna_datasets import RNACNNDataset, RNALanguageDataset
 from biolm_utils.train_utils import (
     compute_metrics_for_classification,
     compute_metrics_for_regression,
@@ -67,17 +65,8 @@ LOGPATH.mkdir(parents=True, exist_ok=True)
 if args.mode not in ["tokenize", "predict", "interpret"]:
     TBPATH.mkdir(parents=True, exist_ok=True)
 
-# if args.mode in ["predict", "interpret"]:
-#     DATASETFILE = OUTPUTPATH / "dataset.json"
-# elif args.mode != "interpret":
-#     DATASETFILE = OUTPUTPATH / args.mode / "dataset.json"
-# else:
-# DATASETFILE = OUTPUTPATH / "fine-tune" / "dataset.json"
-
 if args.mode in ["tokenize"]:
     DATASETFILE = None  # we don't save it when tokenizing
-elif args.mode in ["predict", "interpret"]:
-    DATASETFILE = OUTPUTPATH / "fine-tune" / "dataset.json"
 else:
     DATASETFILE = OUTPUTPATH / args.mode / "dataset.json"
 
