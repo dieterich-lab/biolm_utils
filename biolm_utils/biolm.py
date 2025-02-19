@@ -53,7 +53,9 @@ logging.info(
 config = get_config()
 
 if args.mode != "tokenize":
-    TOKENIZER = get_tokenizer(args, TOKENIZERFILE, config.TOKENIZER_CLS)
+    TOKENIZER = get_tokenizer(
+        args, TOKENIZERFILE, config.TOKENIZER_CLS, config.PRETRAINING_REQUIRED
+    )
     TOKENIZER_FOR_TRAINER = (
         TOKENIZER
         if config.SPECIAL_TOKENIZER_FOR_TRAINER_CLS is None

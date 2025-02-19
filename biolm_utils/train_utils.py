@@ -90,34 +90,32 @@ def compute_metrics_for_classification(dataset, savepath):
     return _compute_metrics
 
 
-def get_tokenizer(args, tokenizer_file, tokenizer_cls):
+def get_tokenizer(args, tokenizer_file, tokenizer_cls, pretraining_required):
 
-    if args.mode != "pre-train" or args.pretrainedmodel:
-        try:
-            with open(
-                tokenizer_file.parent.parent / "pre-train" / "tokenizer_config.json",
-                "r",
-            ) as ff:
-                tok_config = json.load(ff)
-                trunc_side = tok_config["truncation_side"]
-                model_max_len = tok_config["model_max_length"]
-                cls_token = tok_config["cls_token"]
-                unk_token = tok_config["unk_token"]
-                mask_token = tok_config["mask_token"]
-                pad_token = tok_config["pad_token"]
-                sep_token = tok_config["sep_token"]
-                eos_token = tok_config["eos_token"]
-                bos_token = tok_config["bos_token"]
-        except FileNotFoundError:
-            mask_token = "[MASK]"
-            cls_token = "[CLS]"
-            unk_token = "[UNK]"
-            pad_token = "[PAD]"
-            sep_token = "[SEP]"
-            bos_token = "[BOS]"
-            eos_token = "[EOS]"
-            model_max_len = args.blocksize
-            trunc_side = "left" if args.lefttailing else "right"
+    if args.pretrainedmodel or (args.mode == "fine-tune" and pretraining_required):
+        if args.mode == "fine-tune" and pretraining_required:
+            tokenizer_config_file = (
+                tokenizer_file.parent.parent / "pre-train" / "tokenizer_config.json"
+            )
+        else:
+            tokenizer_config_file = tokenizer_file.parent / "tokenizer_config.json"
+        with open(
+            tokenizer_config_file,
+            "r",
+        ) as ff:
+            tok_config = json.load(ff)
+            trunc_side = tok_config["truncation_side"]
+            model_max_len = tok_config["model_max_length"]
+            cls_token = tok_config["cls_token"]
+            unk_token = tok_config["unk_token"]
+            mask_token = tok_config["mask_token"]
+            pad_token = tok_config["pad_token"]
+            sep_token = tok_config["sep_token"]
+            eos_token = tok_config["eos_token"]
+            bos_token = tok_config["bos_token"]
+        logger.info(
+            f"Loaded tokenizer config from {tokenizer_file.parent / 'tokenizer_config.json'} and setting it to {model_max_len} model max length"
+        )
         with open(tokenizer_file, "r") as f:
             tokenizer_json = json.load(f)
         # Remove the meta data left and right correctly
@@ -152,7 +150,7 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls):
                 )
                 tokenizer_json["normalizer"]["normalizers"].insert(0, pattern)
         # unfortunately we need to temporarily save the tokenizer as
-        # XlnetTokenizerFast is deprived of the ability to load serialized tokenizers
+        # some instances of TokenizerFast are deprived of the ability to load serialized tokenizers
         with tempfile.NamedTemporaryFile("r+") as tmp:
             json.dump(tokenizer_json, tmp)
             tmp.seek(0)
@@ -170,7 +168,9 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls):
                 truncation_side=trunc_side,
             )
     else:  # pre-training data is the same as the data for tokenizing
-        logger.info(f"Loading tokenizer from {tokenizer_file}")
+        logger.info(
+            f"Loading tokenizer from {tokenizer_file} and setting it to {args.blocksize} model max length"
+        )
         tokenizer = tokenizer_cls(
             tokenizer_file=str(tokenizer_file),
             mask_token="[MASK]",
