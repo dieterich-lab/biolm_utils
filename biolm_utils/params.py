@@ -49,7 +49,7 @@ def parse_args(*args):
     # Following are the parameters that describe the data and the desired training routine.
     parser.add_argument(
         "--task",
-        required=mode.mode != "tokenize",
+        required=mode.mode not in ["tokenize", "pre-train"],
         choices=["regression", "classification"],
         help="""
         Determines the kind of training (with correct choice of loss function, trainer and so on).
