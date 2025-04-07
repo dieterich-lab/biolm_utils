@@ -239,21 +239,15 @@ class RNABaseDataset(Dataset):
     def get_centered_lines(self):
         centered_lines = list()
         for line in self.tokenized_seqs:
-            if len(line) <= self.tokenizer.model_max_length:
-                centered_lines.append(line)
-            else:
+            if len(line) > self.tokenizer.model_max_length:
                 cds_pos = [i for i, x in enumerate(line) if self.args.centertoken in x]
-                if not cds_pos:
-                    centered_lines.append(line)
-                else:
+                if cds_pos:
                     cds_pos = cds_pos[0]
                     middle = (self.tokenizer.model_max_length - 2) // 2
-                    if cds_pos < middle:
-                        centered_lines.append(line)
-                    else:
+                    if cds_pos >= middle:
                         rest_right = max(0, middle - (len(line) - cds_pos))
                         line = line[max(0, cds_pos - middle - rest_right) :]
-                        centered_lines.append(line)
+            centered_lines.append(line)
             if self.args.encoding not in ["3mer", "5mer"]:
                 centered_lines[-1] = self.join_str.join(centered_lines[-1])
         return centered_lines
