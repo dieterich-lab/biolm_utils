@@ -6,7 +6,7 @@ from tokenizers import Regex, Tokenizer, decoders, pre_tokenizers, trainers
 from tokenizers.models import BPE, WordLevel
 from tokenizers.normalizers import Replace
 from tokenizers.normalizers import Sequence as Normseq
-from tokenizers.pre_tokenizers import Sequence, Split, Whitespace
+from tokenizers.pre_tokenizers import Sequence, Split, WhitespaceSplit
 from tokenizers.processors import BertProcessing
 
 from biolm_utils.entry import TOKENIZERFILE, logging
@@ -42,9 +42,9 @@ def tokenize(args):
 
         file_path = sample_file_path
 
-    if args.encoding and args.encoding == "bpe":
+    if args.encoding == "bpe":
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-    else:
+    elif args.encoding == "atomic":
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
 
     # normalization and pre-encoding.
@@ -97,7 +97,7 @@ def tokenize(args):
             else:
                 tok_seq.append(Split(pattern=Regex("."), behavior="isolated"))
 
-            tok_seq.append(Whitespace())
+            tok_seq.append(WhitespaceSplit())
         norm_seq.append(Replace('"', ""))
 
         tokenizer.normalizer = Normseq(norm_seq)
@@ -105,7 +105,7 @@ def tokenize(args):
         # The 3mer/5mer processing is too complex to be implemented with the tokenizer regex patterns.
         # We therefore open the file, process the k-merization with regular regex patterns and write the results to a temporary file.
         # The actual tokenizer is then just a white space tokenizer.
-        tok_seq.append(Whitespace())
+        tok_seq.append(WhitespaceSplit())
         with open(file_path, encoding="utf-8") as f:
             sample_lines = [
                 line
