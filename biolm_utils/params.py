@@ -334,6 +334,11 @@ def parse_args(*args):
         action="store_true",
         help="Only tokenize and save the data to file, then quit.",
     )
+    parser.add_argument(
+        "--forcenewdata",
+        action="store_true",
+        help="Forces creation of a dataset, even if a dataset file already exists.",
+    )
 
     # Or simply pass a config file.
     parser.add_argument(
