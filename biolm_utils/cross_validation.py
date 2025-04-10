@@ -186,23 +186,28 @@ def parametrized_decorator(params, dataset):
                 idx = np.arange(len(dataset))
                 np.random.shuffle(idx)
 
-                if len(params.splitratio) < 3:
+                if not params.splitratio:
+                    splitratio = [80, 20]
+                else:
+                    splitratio = params.splitratio
+
+                if len(splitratio) < 3:
                     train_idx, val_idx = (
-                        idx[: int(len(idx) * params.splitratio[0] / 100)],
-                        idx[-int(len(idx) * params.splitratio[1] / 100) :],
+                        idx[: int(len(idx) * splitratio[0] / 100)],
+                        idx[-int(len(idx) * splitratio[1] / 100) :],
                     )
                 else:
                     train_idx, val_idx, test_idx = (
-                        idx[: int(len(idx) * params.splitratio[0] / 100)],
+                        idx[: int(len(idx) * splitratio[0] / 100)],
                         idx[
-                            int(len(idx) * params.splitratio[0] / 100) : int(
-                                len(idx) * params.splitratio[0] / 100
+                            int(len(idx) * splitratio[0] / 100) : int(
+                                len(idx) * splitratio[0] / 100
                             )
-                            + int(len(idx) * params.splitratio[1] / 100)
+                            + int(len(idx) * splitratio[1] / 100)
                         ],
                         idx[
-                            int(len(idx) * params.splitratio[0] / 100)
-                            + int(len(idx) * params.splitratio[1] / 100) :
+                            int(len(idx) * splitratio[0] / 100)
+                            + int(len(idx) * splitratio[1] / 100) :
                         ],
                     )
 
@@ -210,12 +215,12 @@ def parametrized_decorator(params, dataset):
                 if not params.dev:
                     train_dataset = Subset(dataset, train_idx)
                     val_dataset = Subset(dataset, val_idx)
-                    if len(params.splitratio) == 3:
+                    if len(splitratio) == 3:
                         test_dataset = Subset(dataset, test_idx)
                 # These are debugging settings.
                 else:
                     train_dataset = val_dataset = Subset(dataset, idx)
-                    if len(params.splitratio) == 3:
+                    if len(splitratio) == 3:
                         test_dataset = Subset(dataset, idx)
 
                 if len(train_dataset) < params.batchsize:
