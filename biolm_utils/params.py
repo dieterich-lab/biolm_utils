@@ -134,10 +134,10 @@ def parse_args(*args):
         "--pretrainedmodel",
         default=None,
         help="""
-        If not set, the tokenizer/pre-trained model will be inferred from the outputpath.
-        When pre-traning MLM this refers to using the tokenizer of differenly named run.
-        When fine-tuning, this refers to using a pre-trained model from a differenly named run.
-        Otherwise the pretrainedmodel is derived according to the `filepath`/`outputpath`.
+        If not set, the tokenizer/pre-trained model will be inferred from the current experiment's outputpath.
+        If set to the path of a different experiment's parentfolder:
+            * When pre-traning MLM: Uses the tokenizer of the given outputfolder.
+            * When fine-tuning: Uses a pre-trained model of the given outputfolder.
         """,
     )
     parser.add_argument(

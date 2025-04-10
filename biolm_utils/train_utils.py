@@ -92,13 +92,13 @@ def compute_metrics_for_classification(dataset, savepath):
 
 def get_tokenizer(args, tokenizer_file, tokenizer_cls, pretraining_required):
 
-    if args.pretrainedmodel or (args.mode == "fine-tune" and pretraining_required):
-        if args.mode == "fine-tune" and pretraining_required:
-            tokenizer_config_file = (
-                tokenizer_file.parent / "pre-train" / "tokenizer_config.json"
-            )
-        else:
-            tokenizer_config_file = tokenizer_file.parent / "tokenizer_config.json"
+    # if args.pretrainedmodel or (args.mode == "fine-tune" and pretraining_required):
+    if args.mode == "fine-tune" and pretraining_required:
+        tokenizer_config_file = (
+            tokenizer_file.parent / "pre-train" / "tokenizer_config.json"
+        )
+        # else:
+        #     tokenizer_config_file = tokenizer_file.parent / "tokenizer_config.json"
         with open(
             tokenizer_config_file,
             "r",
