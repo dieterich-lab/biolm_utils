@@ -36,9 +36,6 @@ class RNABaseDataset(Dataset):
             if args.stripheader:
                 lines = lines[1:]
 
-        if args.dev:
-            lines = lines[: args.dev // 2] + lines[-args.dev // 2 :]
-
         # We'll save the original input data lines for later reference.
         self.lines = lines
         self.seq_idx = [

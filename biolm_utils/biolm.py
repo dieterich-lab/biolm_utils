@@ -127,10 +127,10 @@ def train(
             else len(val_dataset)
         ),
         gradient_accumulation_steps=GRADACC,
-        save_total_limit=1,
-        load_best_model_at_end=args.mode != "pre-train",
+        save_total_limit=1 if not args.dev else 0,
+        load_best_model_at_end=args.mode != "pre-train" if not args.dev else False,
         eval_strategy="epoch" if args.mode != "pre-train" else "no",
-        save_strategy="epoch",
+        save_strategy="epoch" if not args.dev else "no",
         logging_strategy="epoch" if args.mode != "pre-train" else "steps",
         disable_tqdm=True,
         log_level="info" if not args.silent else "critical",
