@@ -337,7 +337,7 @@ def run(
             data_collator = DefaultDataCollator()
         # Pre-training and fine-tuning.
         if args.mode in ["pre-train", "fine-tune"]:
-            results_and_model = train(
+            eval_results, model = train(
                 model_cls=model_cls,
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
@@ -347,7 +347,6 @@ def run(
                 tokenizer=TOKENIZER,
             )
             if args.mode != "pre-train":
-                eval_results, model = results_and_model
                 if not args.splitpos and len(args.splitratio) < 3:
                     return eval_results
                 else:
