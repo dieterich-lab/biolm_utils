@@ -369,7 +369,7 @@ def main():
             data_collator = DefaultDataCollator()
 
         if args.mode in ["pre-train", "fine-tune"]:
-            _, model = train(
+            results, model = train(
                 train_dataset=train_dataset,
                 val_dataset=val_dataset,
                 data_collator=data_collator,
@@ -382,7 +382,7 @@ def main():
                 config=config,
             )
             if args.mode == "fine-tune" and test_dataset:
-                return test(
+                results = test(
                     model=model,
                     test_dataset=test_dataset,
                     data_collator=data_collator,
@@ -395,6 +395,7 @@ def main():
                     model_cls=model_cls,
                     config=config,
                 )
+            return results
 
         elif args.mode == "predict":
             return test(

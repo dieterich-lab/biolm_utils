@@ -77,7 +77,6 @@ def run_and_log(
     train_dataset,
     val_dataset,
     test_dataset,
-    *args,
 ):
     """
     Log dataset info and run the main function.
@@ -175,6 +174,7 @@ def parametrized_decorator(params, dataset):
             def cross_validate_on_predefined_splits(*args, **kwargs):
                 results = []
                 for k, test_split in enumerate(split_dict.keys()):
+                    logger.info(f"----- SPLIT {k} -----")
                     with split_path_context(test_split, params):
                         val_pos = (k - 1) % len(split_dict.keys())
                         val_split = list(split_dict.keys())[val_pos]
@@ -201,7 +201,7 @@ def parametrized_decorator(params, dataset):
                 if params.mode != "interpret":
                     res_type = "validation" if not test_dataset else "test"
                     logger.info(
-                        f"Mean {res_type} results: {np.mean(results)}, Std: {np.std(results)}"
+                        f"Mean {res_type} results from {len(results)} splits: {np.mean(results)}, Std: {np.std(results)}"
                     )
                     return results
 
@@ -243,7 +243,7 @@ def parametrized_decorator(params, dataset):
                 if params.mode != "interpret":
                     res_type = "validation" if not test_dataset else "test"
                     logger.info(
-                        f"Mean {res_type} results: {np.mean(results)}, Std: {np.std(results)}"
+                        f"Mean {res_type} results from {len(results)} splits: {np.mean(results)}, Std: {np.std(results)}"
                     )
                     return results
 
@@ -262,13 +262,11 @@ def parametrized_decorator(params, dataset):
                         split_dict[split].append(i)
                     train_splits = set(set(split_dict.keys())) - set(params.devsplits)
                     if params.testsplits:
-                        train_splits -= -set(params.testsplits)
+                        train_splits -= set(params.testsplits)
                     train_idx = [i for s in train_splits for i in split_dict[s]]
                     val_idx = [i for s in params.devsplits for i in split_dict[s]]
                     if params.testsplits:
-                        train_idx = [
-                            i for s in params.testsplits for i in split_dict[s]
-                        ]
+                        test_idx = [i for s in params.testsplits for i in split_dict[s]]
                     else:
                         test_idx = None
                     train_dataset, val_dataset, test_dataset = make_datasets(

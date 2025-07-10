@@ -110,7 +110,9 @@ def parse_args(*args):
     parser.add_argument(
         "--crossvalidation",
         type=int,
-        default=0,
+        default=False,
+        const=1,
+        nargs="?",
         help="trigger if cross-validation is desired. If set to `0`, no cross-validation is performed. "
         "If set to `True`, cross-validation is performed on the predifined splits in the data file, taking each split as a test set once. "
         "If set to an integer `x`, `x`-fold cross-validation is performed on random splits determined by `splitratio`. ",
