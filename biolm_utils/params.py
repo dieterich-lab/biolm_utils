@@ -1,445 +1,468 @@
 import argparse
-import re
-import sys
-from collections.abc import MutableMapping
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import yaml
 
 
-def check_percentage(value):
-    splits = re.findall("\d+", value)
-    splits = list(map(int, splits))
-    if len(splits) > 3:
-        raise argparse.ArgumentTypeError(
-            f"Invalid split ratio: ({splits}). Either 2 (train/val) or 3 splits (train/val/test) percentages must be given."
+def _flatten_config(config: Dict[str, Any], mode: str) -> Dict[str, Any]:
+    """
+    Recursively flattens a nested dictionary, selectively skipping sections
+    based on the execution mode to handle mode-specific duplicate keys.
+    """
+    flat_config = {}
+
+    # Define which sections to skip for each mode
+    skip_sections = {
+        "pre-train": ["fine-tuning data source", "inference data source"],
+        "tokenize": ["fine-tuning data source", "inference data source"],
+        "fine-tune": [
+            "tokenizing and pre-training data source",
+            "inference data source",
+        ],
+        "predict": [
+            "tokenizing and pre-training data source",
+            "fine-tuning data source",
+        ],
+    }
+    sections_to_skip = skip_sections.get(mode, [])
+
+    def _flatten_recursive(sub_dict: Dict[str, Any]):
+        for key, value in sub_dict.items():
+            if key in sections_to_skip:
+                continue  # Skip this entire section
+
+            if isinstance(value, dict):
+                _flatten_recursive(value)
+            else:
+                # No longer checking for duplicates, as we are selectively skipping them.
+                flat_config[key] = value
+
+    _flatten_recursive(config)
+    return flat_config
+
+
+def _validate_task_requirement(args: argparse.Namespace):
+    """Check that --task is provided for relevant modes."""
+    if args.mode in ["fine-tune", "predict", "interpret"] and not args.task:
+        raise argparse.ArgumentError(
+            None, f"Argument '--task' is required when mode is '{args.mode}'."
         )
-    if sum(splits) != 100:
+
+
+def _validate_splitratio(args: argparse.Namespace):
+    """Check that --splitratio is a list of 2 or 3 integers summing to 100."""
+    if not args.splitratio:
+        return
+    if not (
+        isinstance(args.splitratio, list)
+        and all(isinstance(item, int) for item in args.splitratio)
+    ):
+        raise argparse.ArgumentTypeError("'splitratio' must be a list of integers.")
+
+    if len(args.splitratio) not in [2, 3]:
         raise argparse.ArgumentTypeError(
-            f"Invalid split ratio: ({splits}). Must sum up to 100"
+            f"'splitratio' must contain 2 (train, val) or 3 (train, val, test) values, but got {len(args.splitratio)}."
         )
-    return splits
 
-
-def get_list(value):
-    splits = re.findall("\d+", value)
-    splits = list(map(int, splits))
-    return splits
-
-
-def geq_one(value):
-    value = int(value)
-    if value <= 1:
+    if sum(args.splitratio) != 100:
         raise argparse.ArgumentTypeError(
-            f"Invalid batch size ({value}). Batch size must be bigger than one due to `batchnorm1d` constraints."
+            f"Values in 'splitratio' must sum to 100, but got {sum(args.splitratio)} for {args.splitratio}."
         )
-    return value
 
 
-def parse_args(*args):
-    mode_parser = argparse.ArgumentParser(prog="biolm", add_help=False)
+def _validate_split_definitions(args: argparse.Namespace):
+    """Check that dev/test splits have the correct structure based on cross-validation."""
 
-    # Following is the main parameters for either training a tokenizer or using a model.
-    mode_parser.add_argument(
+    def is_list_of_ints(value: Any) -> bool:
+        return isinstance(value, list) and all(isinstance(item, int) for item in value)
+
+    def is_list_of_lists_of_ints(value: Any) -> bool:
+        return (
+            isinstance(value, list)
+            and all(isinstance(sublist, list) for sublist in value)
+            and all(isinstance(item, int) for sublist in value for item in sublist)
+        )
+
+    for split_name in ["devsplits", "testsplits"]:
+        split_value = getattr(args, split_name)
+        if not split_value:
+            continue
+
+        if args.crossvalidation:
+            if not is_list_of_lists_of_ints(split_value):
+                raise argparse.ArgumentTypeError(
+                    f"With 'crossvalidation', '{split_name}' must be a list of lists of integers (e.g., '[[1, 2], [3]]')."
+                )
+        else:
+            if not is_list_of_ints(split_value):
+                raise argparse.ArgumentTypeError(
+                    f"Without 'crossvalidation', '{split_name}' must be a flat list of integers (e.g., '[1, 2]')."
+                )
+
+    if args.testsplits:
+        if not len(args.devsplits) == len(args.testsplits):
+            raise argparse.ArgumentTypeError(
+                f"With 'testsplits', 'devsplits' and 'testsplits' must have the same length."
+            )
+
+
+def _validate_split_exclusivity(args: argparse.Namespace):
+    """
+    Check that exactly one of --splitratio or --splitpos is provided.
+    """
+    ratio_is_set = args.splitratio is not None
+    pos_is_set = args.splitpos is not None
+
+    # Condition 1: Not both can be set.
+    if ratio_is_set and pos_is_set:
+        raise argparse.ArgumentError(
+            None,
+            f"In mode '{args.mode}', '--splitratio' and '--splitpos' are mutually exclusive. Please provide only one.",
+        )
+
+    # Condition 2: At least one must be set.
+    if not ratio_is_set and not pos_is_set:
+        raise argparse.ArgumentError(
+            None,
+            f"Either '--splitratio' or '--splitpos' must be provided to define data splits.",
+        )
+
+
+def _validate_splitpos_dependencies(args: argparse.Namespace):
+    """Check that if --splitpos is given, --devsplits is also provided."""
+    if args.splitpos is not None and args.devsplits is None:
+        raise argparse.ArgumentError(
+            None,
+            "Argument '--devsplits' is required when '--splitpos' is provided.",
+        )
+
+
+def _validate_all_args(args: argparse.Namespace):
+    """Runs all validation checks on the parsed arguments."""
+    _validate_task_requirement(args)
+    _validate_splitratio(args)
+    _validate_split_definitions(args)
+    _validate_split_exclusivity(args)
+    _validate_splitpos_dependencies(args)
+
+
+def create_parser() -> argparse.ArgumentParser:
+    """Creates the argument parser with all project arguments."""
+    parser = argparse.ArgumentParser(
+        description="Run bioinformatical language models.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    # --- Core arguments ---
+    core = parser.add_argument_group("Core Arguments")
+    core.add_argument(
+        "--configfile",
+        type=Path,
+        help="Path to a YAML config file. Command-line arguments will override config file values.",
+    )
+    core.add_argument(
         "mode",
         choices=["tokenize", "pre-train", "fine-tune", "predict", "interpret"],
-        help="""
-        `tokenize` = Tokenizing your data and saving the tokenizer.
-        `pre-train` = Masked Language Modelling (MLM) on a pre-traning dataset.
-        `fine-tune` = Regression fine-tuning for a pre-trained LM or adhoc on a fine-tuning dataset.
-        `predict` = Running inference of a fine-tuned model on a dataset.
-        `interpret` = Extraction of loo scores using the fine-tuned model on the fine-tuning dataset.
-        """,
+        help="The mode to run the script in.",
     )
-    mode, _ = mode_parser.parse_known_args()
-    parser = argparse.ArgumentParser(parents=[mode_parser])
-    # Following are the parameters that describe the data and the desired training routine.
-    parser.add_argument(
-        "--task",
-        required=mode.mode not in ["tokenize", "pre-train"],
-        choices=["regression", "classification"],
-        help="""
-        Determines the kind of training (with correct choice of loss function, trainer and so on).
-        """,
-    )
-
-    # Following identifies the data source.
-    parser.add_argument("--filepath", type=str, help="The path the data file.")
-    parser.add_argument(
+    core.add_argument(
         "--outputpath",
-        type=str,
-        default=None,
-        help="Path where to store the outputs for an experiment series. Will revert to folder of of the `filepath` if not given.",
+        type=Path,
+        help="Path to the output directory. If not set, it's derived from the data file name.",
+    )
+    core.add_argument(
+        "--filepath",
+        type=Path,
+        help="Path to the data file for tokenization or training.",
+    )
+    core.add_argument(
+        "--task",
+        choices=["regression", "classification"],
+        help="The fine-tuning task. Required for modes: fine-tune, predict, interpret.",
     )
 
-    parser.add_argument(
+    # --- Data Source Arguments ---
+    source = parser.add_argument_group("Data Source Arguments")
+    source.add_argument(
         "--stripheader",
         action="store_true",
-        help="If the file has a header, turn on this option to discard it.",
+        help="Strip the header from the data file.",
     )
-    parser.add_argument(
-        "--columnsep",
-        type=str,
-        default=",",
-        help="Separating character for the the different columns in the file",
+    source.add_argument(
+        "--columnsep", type=str, default="\t", help="Column separator in the data file."
     )
-    parser.add_argument(
-        "--tokensep",
-        type=str,
-        default=None,
-        help="Separator for atomic tokens in your sequence.",
+    source.add_argument(
+        "--tokensep", type=str, help="Separator for tokens within a sequence."
     )
-    parser.add_argument(
+    source.add_argument(
         "--specifiersep",
         type=str,
-        default=None,
-        help="""
-        Atomic encoding only. If inputs are further specified with a float number, this is the separator
-        that it should be separated by, e.g. '...,a#2.5,...' if 'a" is further specified by '2.5'.
-        """,
+        help="Separator for token specifiers (e.g., 'A#1.0').",
     )
-    parser.add_argument(
-        "--seqpos",
-        type=int,
-        help="Field position of the sequence in the data file (for 'our' datasets, this will be fixed in `entry.py`).",
+    source.add_argument(
+        "--idpos", type=int, help="Column index (1-based) of the sequence identifier."
     )
-    parser.add_argument(
-        "--idpos",
-        type=int,
-        help="Field position of the sequence in the data file (for 'our' datasets, this will be fixed in `entry.py`).",
+    source.add_argument(
+        "--seqpos", type=int, help="Column index (1-based) of the sequence."
     )
-    parser.add_argument(
-        "--crossvalidation",
-        type=int,
-        default=False,
-        const=1,
-        nargs="?",
-        help="trigger if cross-validation is desired. If set to `0`, no cross-validation is performed. "
-        "If set to `True`, cross-validation is performed on the predifined splits in the data file, taking each split as a test set once. "
-        "If set to an integer `x`, `x`-fold cross-validation is performed on random splits determined by `splitratio`. ",
+    source.add_argument(
+        "--labelpos", type=int, help="Column index (1-based) of the label."
     )
-    parser.add_argument(
-        "--splitratio",
-        type=check_percentage,
-        default=[80, 20],
-        help="Comma-seprated list describing the desired split ratio for train, validation and (possibly) test split for both cross-validation and non-cross-validation. "
-        "Format is `train_percentage/val_percentage(/test_percentage)`, e.g. `85,15` or `70,20,10`. Must sum up to 100 (see default). Given a third splitratio triggers testing on that split. "
-        "Will be overruled in case `splitpos`, `devsplits` and `testsplits` parameters are set for predefined splits.",
-    )
-    parser.add_argument(
-        "--splitpos",
-        type=int,
-        # type=eval,
-        default=None,
-        help="`None` or `False`if no splits are defined in the data file. `splitpos` will always overrule `splitratio`. "
-        "If set to `True`, the split identifier is expected to be in the first column of the data file, i.e. the first column is expected to contain the split identifier. "
-        "If set to an integer, the split identifier is expected to be in the given field. "
-        "For non-cross-validation `devsplits` and `testsplits` must be set to use the splits.",
-    )
-    parser.add_argument(
-        "--devsplits",
-        type=eval,
-        # type=get_list,
-        help="If `crossvalidation=False`: A list, e.g. `[1, 2, ..]` to denote the splits that should be used for validation. `splitpos` must be set for this to work. "
-        "If `crossvalidation=True`: A list of lists, e.g. `[[1,2],[3]]` to denote the splits that should be used for validation in cross-validation. ",
-    )
-    parser.add_argument(
-        "--testsplits",
-        type=eval,
-        # type=get_list,
-        help="If `crossvalidation=False`: A list, e.g. `[1, 2, ..]` to denote the splits that should be used for testing. Setting this parameter will trigger testing on these splits. `splitpos` must be set for this to work. "
-        "If `crossvalidation=True`: A list of lists, e.g. `[[1,2],[3]]` to denote the splits that should be used for testing in cross-validation. ",
-    )
-    parser.add_argument(
-        "--inferenceonsplits",
-        type=eval,
-        help="Either `None`/`False` for inference on all splits or a list, e.g. `[1, 2, ..]` to denote the splits that should be predicted/interpreted. `splitpos` must be set for this to work.",
-    )
-    parser.add_argument(
-        "--labelpos",
-        type=int,
-        help="Field position of the label in the data file.",
-    )
-    parser.add_argument(
+    source.add_argument(
         "--weightpos",
         type=int,
-        help="Field position of the regression weights in the data file.",
-    )
-    parser.add_argument(
-        "--pretrainedmodel",
         default=None,
-        help="""
-        If not set, the tokenizer/pre-trained model will be inferred from the current experiment's outputpath.
-        If set to the path of a different experiment's parentfolder:
-            * When pre-traning MLM: Uses the tokenizer of the given outputfolder.
-            * When fine-tuning: Uses a pre-trained model of the given outputfolder.
-        """,
+        help="Column index (1-based) of the regression weights.",
     )
-    parser.add_argument(
-        "--encoding",
-        type=str,
-        nargs="?",
-        choices=["bpe", "3mer", "5mer", "atomic"],
-        help="""
-        Defines how to tokenize an input string. 
-        `bpe` is Byte Pair Encoding.
-        `3mer` and `5mer` correspont to non overlapping 3-/5-grams.
-        `atomic equals character-level tokenization.
-        """,
-    )
-
-    # If you want to tokenize, you only need to specify the following.
-    parser.add_argument(
-        "--samplesize",
-        type=int,
-        default=None,
-        help="If your sample data is to big, you can downsample it",
-    )
-    parser.add_argument(
-        "--vocabsize",
-        type=int,
-        default=20_000,
-        help="Determines the final vocabulary size while during byte pair encoding",
-    )
-
-    parser.add_argument(
-        "--minfreq",
-        type=int,
-        default=2,
-        help="Determines the minimal frequency of a token to be included in the BPE vocabulary.",
-    )
-    parser.add_argument(
-        "--maxtokenlength",
-        type=int,
-        default=10,
-        help="Determines how long a token may be at max in the final BPE vocab.",
-    )
-    parser.add_argument(
-        "--atomicreplacements",
-        type=str,
-        default=None,
-        help="A dictionary-like string that contains the replacements of multiple character tokens to atomic characters of the BPE-alphabet, i.e. `{'-CDSstop': 's'}`.",
-    )
-    parser.add_argument(
-        "--centertoken",
-        type=str,
-        help="If the input string extends the 512 token length, it is centered around the given token.",
-    )
-    parser.add_argument(
+    source.add_argument(
         "--nomarkers",
         action="store_true",
-        help="Option to remove `CDS_end`/`-CDSstop-` and `-EJ-` from the input sequence.",
+        help="Option to remove `CDS_end` and `-EJ-` markers from the input sequence.",
+    )
+    source.add_argument(
+        "--three_utr",
+        action="store_true",
+        help="Trains only on the subsequence after the `-CDS_end-` token.",
     )
     parser.add_argument(
         "--_3utr",
         action="store_true",
         help="Trains only on the subsequence after `-CDS_end-`-token.",
     )
-    parser.add_argument(
+    source.add_argument(
         "--non3utr",
         action="store_true",
-        help="Trains only on the subsequence until `CDS_end`-token.",
+        help="Trains only on the subsequence until the `CDS_end`-token.",
     )
-    parser.add_argument(
+    source.add_argument(
         "--only512",
         action="store_true",
-        help="Filters out sequences that > 512 tokens.",
+        help="Filters out sequences that are longer than 512 tokens.",
     )
-    parser.add_argument(
+
+    # --- Splitting Arguments ---
+    splitting = parser.add_argument_group("Splitting Arguments")
+    splitting.add_argument(
+        "--splitratio",
+        type=json.loads,
+        help="JSON list for train/val/test split ratios, e.g., '[80, 10, 10]'.",
+    )
+    splitting.add_argument(
+        "--crossvalidation",
+        type=int,
+        default=0,
+        help="Number of cross-validation folds. 0 or 1 means no CV.",
+    )
+    splitting.add_argument(
+        "--splitpos",
+        type=int,
+        help="Column index (1-based) containing the split identifier.",
+    )
+    splitting.add_argument(
+        "--devsplits",
+        type=json.loads,
+        help="JSON list of split IDs for the dev set, e.g., '[1, 2]' or '[[1],[2]]' for CV.",
+    )
+    splitting.add_argument(
+        "--testsplits",
+        type=json.loads,
+        help="JSON list of split IDs for the test set, e.g., '[3, 4]' or '[[3],[4]]' for CV.",
+    )
+    splitting.add_argument(
+        "--inferenceonsplits",
+        type=json.loads,
+        help="JSON list of split IDs to run inference on, e.g., '[1, 2]'.",
+    )
+
+    # --- Tokenization Arguments ---
+    tokenization = parser.add_argument_group("Tokenization Arguments")
+    tokenization.add_argument(
+        "--encoding",
+        choices=["bpe", "3mer", "5mer", "atomic"],
+        help="Tokenization encoding method.",
+    )
+    tokenization.add_argument(
+        "--samplesize",
+        type=int,
+        default=None,
+        help="Downsample the data to this size before training tokenizer.",
+    )
+    tokenization.add_argument(
+        "--vocabsize", type=int, default=20000, help="Vocabulary size for BPE."
+    )
+    tokenization.add_argument(
+        "--minfreq",
+        type=int,
+        default=2,
+        help="Minimum frequency for a token to be in the BPE vocabulary.",
+    )
+    tokenization.add_argument(
+        "--maxtokenlength",
+        type=int,
+        default=10,
+        help="Maximum length of a token in the BPE vocabulary.",
+    )
+    tokenization.add_argument(
+        "--atomicreplacements",
+        type=json.loads,
+        help='JSON dict for replacing tokens, e.g., \'{"-CDSstop": "s"}\'.',
+    )
+    tokenization.add_argument(
+        "--centertoken",
+        type=str,
+        help="If an input string exceeds max length, it is centered around this token.",
+    )
+    tokenization.add_argument(
         "--lefttailing",
         action="store_true",
-        help="Truncation is done from the left side of the tokenized input sequence.",
+        help="Truncation is performed from the left side of the tokenized input sequence.",
     )
-    parser.add_argument(
-        "--ngpus",
-        type=int,
-        default=1,
-        choices=[1, 2, 4],
-        help="Number of GPUs that is being trained on (only even numbers up to 4 are allowed).",
+
+    # --- Training arguments ---
+    training = parser.add_argument_group("Training Arguments")
+    training.add_argument(
+        "--nepochs", type=int, default=2, help="Number of training epochs."
     )
-    parser.add_argument(
-        "--accelerator",
-        default="gpu",
-        type=str,
-        choices=["gpu", "cpu"],
-        help="Option to train on GPU or CPU.",
+    training.add_argument(
+        "--batchsize", type=int, default=16, help="Batch size for training."
     )
-    parser.add_argument(
-        "--batchsize",
-        default=16,
-        type=geq_one,
-        help="""
-        This batch size will be multiplied by 4 with gradient accumulation. If you don't want this, change `gradacc` to the desired value.
-        Also, we prohibit batch sizes <2 and advise the user to batch sizes >8 as batch normalization will suffer elsewise.
-        """,
+    training.add_argument(
+        "--gradacc", type=int, default=1, help="Gradient accumulation steps."
     )
-    parser.add_argument(
-        "--learningrate",
-        type=float,
-        help="Denote a specific learning rate",
+    training.add_argument(
+        "--patience", type=int, default=3, help="Patience for early stopping."
     )
-    parser.add_argument(
-        "--gradacc",
-        default=4,
-        type=int,
-        help="""The number of batches to be aggregated before calculating gradients.
-        With a `batchsize` of 16, the effective batch size will 64.
-        Default is set to `4` and shoould not be lowered as we account for GPU parallelization with it.
-        This guarantees that we will always have the same effective batch size.""",
-    )
-    parser.add_argument(
+    training.add_argument(
         "--blocksize",
         type=int,
         default=512,
-        help="Maximal input sequence length of the model.",
+        help="Maximal input sequence length for the model.",
     )
-    parser.add_argument("--nepochs", default=50, type=int)
-    parser.add_argument(
-        "--patience",
-        nargs="?",
-        const=2,
-        default=2,
-        type=int,
-        help="Number of epochs without improvement on the development set before training stops.",
-    )
-    parser.add_argument(
+    training.add_argument(
         "--resume",
-        nargs="?",
-        default=False,
-        const=True,
-        type=int,
-        help="""
-        This parameter is overloaded with two options:
-        1) `--resume` (without parameters) triggers the huggingface internal `resume_from_checkpoint` option which will only _continue_
-        a training that has been interrupted. For example, a planned training that was to run for 50 epochs and was interrupted  at epoch
-        23 can be resumed from the best checkpoint to be run from epoch 23 to planned epoch 50.
-        2) `--resume X` will trigger further pre-training a model from its best checkpoint for additional `X` epochs.
-        """,
+        action="store_true",
+        help="Resume training from the last checkpoint.",
     )
-    parser.add_argument(
+    training.add_argument(
         "--fromscratch",
         action="store_true",
-        help="Finetunes a regression model on a given task with freshly initialized parameters.",
+        help="Fine-tune a model with freshly initialized weights.",
     )
-    parser.add_argument(
+    training.add_argument(
         "--scaling",
-        type=str,
+        choices=["log", "minmax", "standard"],
         default="log",
-        choices=["log", "minmax", "stanard"],
+        help="Method for scaling regression labels.",
     )
-    parser.add_argument(
+    training.add_argument(
         "--weightedregression",
         action="store_true",
-        help="Uses quality labels as weights for the loss function.",
-    )
-    parser.add_argument(
-        "--handletokens",
-        type=str,
-        choices=["remove", "mask", "replace"],
-        help="How to handle 'missing' tokens during interpretability calculations.",
-    )
-    parser.add_argument(
-        "--replacementdict",
-        default=None,
-        type=eval,
-        help="Dict of atomic tokens that should be replaced against each other if `--handletokens` is set to `replace`.",
-    )
-    parser.add_argument(
-        "--replacespecifier",
-        action="store_true",
-        help="if `True` and `handletokens` is set to `replace`, the modifiers (separated by `specifiersep`) will also be set to `0.0`.",
+        help="Use quality labels as weights for the loss function.",
     )
 
-    # Debugging options
-    parser.add_argument(
-        "--silent",
+    # --- Model arguments ---
+    model = parser.add_argument_group("Model Arguments")
+    model.add_argument(
+        "--pretrainedmodel",
+        type=Path,
+        default=None,
+        help="Path to a pretrained model or experiment directory to continue from.",
+    )
+    model.add_argument(
+        "--model_config", type=str, help="Name of the model configuration to use."
+    )
+
+    # --- Interpretation Arguments ---
+    interp = parser.add_argument_group("Interpretation Arguments")
+    interp.add_argument(
+        "--handletokens",
+        choices=["remove", "mask", "replace"],
+        help="Method for LOO score calculation.",
+    )
+    interp.add_argument(
+        "--replacementdict",
+        type=json.loads,
+        help="JSON dict of tokens to replace for LOO scores.",
+    )
+    interp.add_argument(
+        "--replacespecifier",
         action="store_true",
-        help="If set to True, verbose printing of the transformers library is disabled. Only results are printed.",
+        help="If True, also replace specifiers during LOO.",
     )
-    parser.add_argument(
+
+    # --- Debugging and Environment Arguments ---
+    debug = parser.add_argument_group("Debugging and Environment Arguments")
+    debug.add_argument(
         "--dev",
-        nargs="?",
-        const=16,
-        default=False,
-        type=int,
-        help="A flag to speed up processes for debugging by sampling down training data to the given amount of samples and using this data also for validation steps.",
+        action="store_true",
+        help="Run in development mode (e.g., smaller dataset).",
     )
-    parser.add_argument(
+    debug.add_argument(
+        "--silent", action="store_true", help="Silence non-essential logging."
+    )
+    debug.add_argument(
+        "--accelerator",
+        choices=["gpu", "cpu"],
+        default="gpu",
+        help="Hardware accelerator to use.",
+    )
+    debug.add_argument(
         "--getdata",
         action="store_true",
         help="Only tokenize and save the data to file, then quit.",
     )
-    parser.add_argument(
+    debug.add_argument(
         "--forcenewdata",
         action="store_true",
         help="Forces creation of a dataset, even if a dataset file already exists.",
     )
 
-    # Or simply pass a config file.
-    parser.add_argument(
-        "--configfile",
-        type=str,
-        default=None,
-        help="Path to the a config file that will overrule CLI arguments.",
-    )
-    if args:
-        params = parser.parse_args(*args)
-    else:
-        params = parser.parse_args()
+    return parser
 
-    if params.configfile is not None:
-        configfile = params.configfile
 
-        # local function to get the parameters from (nested) yaml sections.
-        def flatten_dict_gen(d):
-            for k, v in d.items():
-                if params.mode in ["pre-train", "tokenize"] and (
-                    k == "fine-tuning data source" or k == "inference data source"
-                ):
-                    continue
-                if params.mode == "fine-tune" and (
-                    k == "tokenizing and pre-training data source"
-                    or k == "inference data source"
-                ):
-                    continue
-                if params.mode == "predict" and (
-                    k == "tokenizing and pre-training data source"
-                    or k == "fine-tuning data source"
-                ):
-                    continue
-                if isinstance(v, MutableMapping) and k != "atomicreplacements":
-                    yield from dict(flatten_dict_gen(v)).items()
-                else:
-                    yield k, v
+def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
+    """
+    Parses arguments, handling config file loading, overrides, and validation.
+    """
+    parser = create_parser()
 
-        with open(params.configfile, "r") as f:
-            try:
-                config = yaml.safe_load(f)
-            except yaml.YAMLError as exc:
-                print(exc)
-                raise
-        sys.argv = [
-            x
-            for i, x in enumerate(sys.argv, 1)
-            if x != "--configfile" and sys.argv[i - 2] != "--configfile"
-        ]
-        config = dict(flatten_dict_gen(config))
-        optargs = list()
-        for kv in config.items():
-            if f"--{kv[0]}" in sys.argv:
-                continue
-            if (isinstance(kv[1], bool) and kv[1] == False) or kv[1] == "None":
-                continue
-            elif isinstance(kv[1], bool):
-                if kv[1]:
-                    optargs += [f"--{kv[0]}"]
-            else:
-                optargs += [f"--{kv[0]}", f"{(kv[1])}"]
-        sys.argv += optargs
-        params = parser.parse_args()
-        params.configfile = configfile
-    return params
+    # --- First pass: get config file path and mode ---
+    # We need the mode to correctly flatten the config file.
+    temp_args, _ = parser.parse_known_args(args)
+
+    config_defaults: Dict[str, Any] = {}
+    if temp_args.configfile:
+        if temp_args.configfile.exists():
+            with open(temp_args.configfile, "r") as f:
+                nested_config = yaml.safe_load(f)
+                # Flatten the config, selectively skipping sections based on mode
+                config_defaults = _flatten_config(nested_config, temp_args.mode)
+                # Handle boolean 'crossvalidation' from YAML before setting defaults
+                if "crossvalidation" in config_defaults and isinstance(
+                    config_defaults["crossvalidation"], bool
+                ):
+                    config_defaults["crossvalidation"] = (
+                        1 if config_defaults["crossvalidation"] else 0
+                    )
+        else:
+            raise FileNotFoundError(f"Config file not found: {temp_args.configfile}")
+
+    # --- Set defaults from config and then parse all arguments ---
+    parser.set_defaults(**config_defaults)
+    final_args = parser.parse_args(args)
+
+    # --- Post-parsing validation for argument dependencies ---
+    _validate_all_args(final_args)
+
+    return final_args
 
 
 if __name__ == "__main__":
-    params = parse_args()
-    print(vars(params))
+    try:
+        args = parse_args()
+        print("Final arguments:")
+        print(args)
+    except (argparse.ArgumentError, argparse.ArgumentTypeError, ValueError) as err:
+        print(f"Configuration Error: {err}")

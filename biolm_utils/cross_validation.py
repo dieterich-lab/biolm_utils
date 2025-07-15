@@ -173,9 +173,6 @@ def parametrized_decorator(params, dataset):
                     split_dict[split].append(i)
 
             if params.testsplits:
-                assert len(params.devsplits) == len(
-                    params.testsplits
-                ), "Number of devsplits and testsplits must be equal."
                 splits = list(zip(params.devsplits, params.testsplits))
             else:
                 splits = params.devsplits
