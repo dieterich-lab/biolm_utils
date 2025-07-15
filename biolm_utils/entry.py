@@ -124,8 +124,6 @@ REGRESSIONTRAINER_CLS = (
 
 CLASSIFICATIONTRAINER_CLS = WeightedSamplingTrainer
 
-# DATASET_CLS = RNALanguageDataset if args.encoding == "bpe" else RNACNNDataset
-
 MLMTRAINER_CLS = Trainer
 
 METRIC = (
