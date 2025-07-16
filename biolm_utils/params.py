@@ -175,7 +175,7 @@ def create_parser() -> argparse.ArgumentParser:
     core.add_argument(
         "--filepath",
         type=Path,
-        help="Path to the data file for tokenization or training.",
+        help="Path to the data file.",
     )
     core.add_argument(
         "--task",
@@ -221,11 +221,6 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Option to remove `CDS_end` and `-EJ-` markers from the input sequence.",
     )
-    source.add_argument(
-        "--three_utr",
-        action="store_true",
-        help="Trains only on the subsequence after the `-CDS_end-` token.",
-    )
     parser.add_argument(
         "--_3utr",
         action="store_true",
@@ -247,13 +242,13 @@ def create_parser() -> argparse.ArgumentParser:
     splitting.add_argument(
         "--splitratio",
         type=json.loads,
-        help="JSON list for train/val/test split ratios, e.g., '[80, 10, 10]'.",
+        help="JSON list for train/val(/test) split ratios, e.g., '[80, 10, 10]'.",
     )
     splitting.add_argument(
         "--crossvalidation",
         type=int,
         default=0,
-        help="Number of cross-validation folds. 0 or 1 means no CV.",
+        help="Number of cross-validation folds. 0 means no CV. 1 is interpreted `True` (for CV on dedicated splits).",
     )
     splitting.add_argument(
         "--splitpos",
@@ -263,12 +258,12 @@ def create_parser() -> argparse.ArgumentParser:
     splitting.add_argument(
         "--devsplits",
         type=json.loads,
-        help="JSON list of split IDs for the dev set, e.g., '[1, 2]' or '[[1],[2]]' for CV.",
+        help="JSON list of split IDs for the dev set, e.g., '[1, 2]' or '[[1],[2]]' for CV. Required if --splitpos is set.",
     )
     splitting.add_argument(
         "--testsplits",
         type=json.loads,
-        help="JSON list of split IDs for the test set, e.g., '[3, 4]' or '[[3],[4]]' for CV.",
+        help="JSON list of split IDs for the test set, e.g., '[3, 4]' or '[[3],[4]]' for CV. Optional if --splitpos is set.",
     )
     splitting.add_argument(
         "--inferenceonsplits",
@@ -348,7 +343,7 @@ def create_parser() -> argparse.ArgumentParser:
     training.add_argument(
         "--fromscratch",
         action="store_true",
-        help="Fine-tune a model with freshly initialized weights.",
+        help="Fine-tune a model with freshly initialized weights. No function if model doesn't need pre-training.",
     )
     training.add_argument(
         "--scaling",
