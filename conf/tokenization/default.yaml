@@ -1,0 +1,5 @@
+# @package _global_
+
+samplesize: null
+encoding: atomic
+lefttailing: false

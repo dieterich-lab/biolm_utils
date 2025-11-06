@@ -1,0 +1,15 @@
+# @package _global_
+
+filepath: null
+stripheader: false
+columnsep: "\t"
+tokensep: ","
+specifiersep: null
+idpos: 1
+seqpos: 1
+labelpos: 1
+crossvalidation: false
+splitratio: null
+splitpos: null
+devsplits: null
+testsplits: null

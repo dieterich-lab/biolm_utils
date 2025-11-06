@@ -1,0 +1,24 @@
+# @package _global_
+
+# Predict specific settings
+task: regression
+data_source:
+  filepath: null
+  stripheader: false
+  columnsep: "\t"
+  tokensep: ","
+  specifiersep: null
+  idpos: 1
+  seqpos: 2
+  labelpos: 3
+  crossvalidation: null
+  splitratio: null
+  splitpos: null
+  devsplits: null
+  testsplits: null
+inference:
+  pretrainedmodel: null
+  looscores:
+    handletokens: mask
+    replacementdict: null
+    replacespecifier: false

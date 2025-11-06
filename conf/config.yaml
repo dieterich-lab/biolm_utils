@@ -1,0 +1,51 @@
+# @package _global_
+
+defaults:
+  - _self_
+
+# Core settings
+mode: tokenize
+outputpath: null
+task: null
+
+# Data source (will be overridden by mode-specific defaults)
+data_source:
+  filepath: null
+  stripheader: false
+  columnsep: "\t"
+  tokensep: ","
+  specifiersep: null
+  idpos: null
+  seqpos: null
+  labelpos: null
+  crossvalidation: null
+  splitratio: null
+  splitpos: null
+  devsplits: null
+  testsplits: null
+
+# Tokenization settings
+tokenization:
+  samplesize: null
+  encoding: atomic
+  lefttailing: false
+
+# Training settings
+training:
+  learningrate: 0.0001
+  seed: 42
+
+# Inference settings
+inference:
+  looscores:
+    handletokens: null
+    replacementdict: null
+    replacespecifier: false
+
+# Debugging settings
+debugging:
+  silent: false
+  dev: false
+  getdata: false
+  forcenewdata: false
+  accelerator: gpu

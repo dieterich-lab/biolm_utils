@@ -1,0 +1,8 @@
+# @package _global_
+
+defaults:
+  - ../data_source: tokenizing
+  - ../tokenization: default
+
+# Tokenize-specific settings
+# Inherits common settings from config.yaml
