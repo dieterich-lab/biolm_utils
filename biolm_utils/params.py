@@ -139,6 +139,13 @@ def _validate_splitpos_dependencies(args: argparse.Namespace):
         )
 
 
+def _validate_batchsize(args: argparse.Namespace):
+    """Check that if --splitpos is given, --devsplits is also provided."""
+    if args.dev and args.batchsize > args.dev:
+        args.batchsize = args.dev
+        print(f"Setting batchsize to {args.dev}.")
+
+
 def _validate_all_args(args: argparse.Namespace):
     """Runs all validation checks on the parsed arguments."""
     _validate_task_requirement(args)
@@ -146,6 +153,7 @@ def _validate_all_args(args: argparse.Namespace):
     _validate_split_definitions(args)
     _validate_split_exclusivity(args)
     _validate_splitpos_dependencies(args)
+    _validate_batchsize(args)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -391,8 +399,11 @@ def create_parser() -> argparse.ArgumentParser:
     debug = parser.add_argument_group("Debugging and Environment Arguments")
     debug.add_argument(
         "--dev",
-        action="store_true",
-        help="Run in development mode (e.g., smaller dataset).",
+        default=False,
+        nargs="?",
+        const=16,
+        type=lambda x: False if x.lower() == "false" else int(x),
+        help="Run in development mode (e.g., smaller dataset). Use 'False' to disable, or provide an integer for dataset size.",
     )
     debug.add_argument(
         "--silent", action="store_true", help="Silence non-essential logging."
