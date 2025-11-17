@@ -1,0 +1,17 @@
+# @package _global_
+
+# Tokenize-specific settings
+data_source:
+  filepath: null
+  stripheader: false
+  columnsep: "\t"
+  tokensep: ","
+  specifiersep: null
+  idpos: 1
+  seqpos: 1
+  labelpos: null
+  crossvalidation: null
+  splitratio: null
+  splitpos: null
+  devsplits: null
+  testsplits: null

@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from transformers.trainer import Trainer
 
-from biolm_utils.params import parse_args
+from biolm_utils.params import load_config
 from biolm_utils.train_utils import (
     compute_metrics_for_classification,
     compute_metrics_for_regression,
@@ -18,7 +18,7 @@ from biolm_utils.trainer import (
 )
 
 # Get the arguments from the command line.
-args = parse_args()
+args = load_config()
 
 # Switch off the 'The used dataset had no length, returning gathered tensors. You should drop the remainder yourself.' warning if desired.
 # if args.silent:

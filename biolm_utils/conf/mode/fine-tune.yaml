@@ -12,7 +12,7 @@ data_source:
   seqpos: 1
   labelpos: 1
   crossvalidation: false
-  splitratio: null
+  splitratio: [80, 10, 10]
   splitpos: null
   devsplits: null
   testsplits: null

@@ -65,10 +65,11 @@ class DebuggingConfig:
     getdata: bool = False
     forcenewdata: bool = False
     accelerator: str = "gpu"
+    ngpus: int = 1
 
 
 @dataclass
-class SalukiConfig:
+class BioLMConfig:
     mode: str = "tokenize"
     outputpath: Optional[Path] = None
     task: Optional[str] = None
@@ -107,6 +108,14 @@ class SalukiConfig:
         if self.debugging:
             for k, v in self.debugging.__dict__.items():
                 flat[k] = v
+
+        # Backward compatibility: check for ngpus in settings.environment
+        if (
+            self.settings
+            and self.settings.environment
+            and "ngpus" in self.settings.environment
+        ):
+            flat["ngpus"] = self.settings.environment["ngpus"]
 
         return argparse.Namespace(**flat)
 

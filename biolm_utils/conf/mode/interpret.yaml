@@ -1,0 +1,34 @@
+# @package _global_
+
+# Interpret specific settings
+task: regression
+data_source:
+  filepath: null
+  stripheader: false
+  columnsep: "\t"
+  tokensep: ","
+  specifiersep: null
+  idpos: 1
+  seqpos: 2
+  labelpos: 3
+  crossvalidation: null
+  splitratio: null
+  splitpos: null
+  devsplits: null
+  testsplits: null
+inference:
+  pretrainedmodel: null
+  looscores:
+    handletokens: mask
+    replacementdict: null
+    replacespecifier: false
+settings:
+  data_pre_processing:
+    centertoken: null
+  environment: {}
+  training:
+    batchsize: 8
+    blocksize: 12288
+    scaling: log
+debugging:
+  ngpus: 1

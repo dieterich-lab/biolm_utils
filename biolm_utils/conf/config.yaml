@@ -2,6 +2,7 @@
 
 defaults:
   - _self_
+  - mode: tokenize
 
 # Core settings
 mode: tokenize
@@ -34,13 +35,25 @@ tokenization:
 training:
   learningrate: 0.0001
   seed: 42
+  batchsize: 8
+  gradacc: 4
+  blocksize: 12288
+  nepochs: 100
+  patience: 10
+  resume: false
+  scaling: log
+  weightedregression: false
 
 # Inference settings
 inference:
+  pretrainedmodel: null
   looscores:
     handletokens: null
     replacementdict: null
     replacespecifier: false
+
+# Settings (for advanced configurations)
+settings: null
 
 # Debugging settings
 debugging:
@@ -49,3 +62,4 @@ debugging:
   getdata: false
   forcenewdata: false
   accelerator: gpu
+  ngpus: 1
