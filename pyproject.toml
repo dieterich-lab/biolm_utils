@@ -20,11 +20,11 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-exclude = ['tests']
+exclude = ['test']
 
 
 [project.optional-dependencies]
-dev = ['debugpy', 'torch-tb-profiler==0.4.3']
+dev = ['debugpy', 'torch-tb-profiler==0.4.3', 'pytest>=7.0.0', 'pytest-mock']
 
 [project.urls]
 repository = "https://github.com/dieterich-lab/biolm_utils"

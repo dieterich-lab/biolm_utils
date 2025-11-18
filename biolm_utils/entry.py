@@ -25,7 +25,10 @@ args = load_config()
 logging.getLogger("accelerate").setLevel(logging.WARNING)
 
 if args.outputpath is None:
-    args.outputpath = Path(args.filepath).stem
+    if hasattr(args, "filepath") and args.filepath:
+        args.outputpath = Path(args.filepath).stem
+    else:
+        args.outputpath = "output"
 
 OUTPUTPATH = Path(args.outputpath)
 OUTPUTPATH.mkdir(parents=True, exist_ok=True)
