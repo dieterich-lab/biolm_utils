@@ -17,13 +17,16 @@ from biolm_utils.rna_datasets import RNABaseDataset
 
 def tokenize(args):
     file_path = Path(args.filepath)
+    print("tokenize")
     if args.samplesize is not None:
+        print("1. IF")
 
         sample_file_path = (
             file_path.parent / (file_path.stem + f"_{args.samplesize}_samples")
         ).with_suffix(file_path.suffix)
 
         with open(args.filepath) as f:
+            print("Open FIlepath")
             newlines = [f.tell()]
             line = f.readline()
             while line:
@@ -45,6 +48,7 @@ def tokenize(args):
     if args.encoding == "bpe":
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
     elif args.encoding == "atomic":
+        print("Create TOkenizer")
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
 
     # normalization and pre-encoding.
