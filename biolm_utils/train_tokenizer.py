@@ -54,11 +54,13 @@ def tokenize(args):
     # normalization and pre-encoding.
     tok_seq = list()
     if args.encoding not in ["3mer", "5mer"]:
+        logging.info("Byte Pair")
         # Normalization for Byte Pair Encoding
         norm_seq = list()
 
         # Replace multi-char markers by ASCII character.
         if args.atomicreplacements is not None:
+            logging.info("args.atomicreplacements is not None")
             for k, v in eval(args.atomicreplacements).items():
                 if args.tokensep is not None:
                     norm_seq.append(
@@ -85,6 +87,7 @@ def tokenize(args):
 
         # Replace the specific information.
         if args.specifiersep is not None:
+            logging.info("args.specifiersep is not None")
             norm_seq.append(
                 Replace(Regex(rf"{args.specifiersep}[^{args.tokensep}]*"), "")
             )
@@ -97,6 +100,7 @@ def tokenize(args):
             tokenizer.decoder = decoders.ByteLevel()
         elif args.encoding == "atomic":
             if args.tokensep is not None:
+                logging.info("args.tokensep is not None")
                 norm_seq.append(Replace(args.tokensep, " "))
             else:
                 tok_seq.append(Split(pattern=Regex("."), behavior="isolated"))
