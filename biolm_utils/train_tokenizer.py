@@ -107,7 +107,8 @@ def tokenize(args):
             tok_seq.append(WhitespaceSplit())
         norm_seq.append(Replace('"', ""))
         logging.info("Norm Seq:")
-        logging.info(norm_seq)
+        for n in norm_seq:
+            logging.info(n)
         tokenizer.normalizer = Normseq(norm_seq)
     elif args.encoding in ["3mer", "5mer"]:
         # The 3mer/5mer processing is too complex to be implemented with the tokenizer regex patterns.
@@ -173,6 +174,7 @@ def tokenize(args):
             tokenizer.train([tmp.name], trainer)
     else:
         logging.info(f"Tokenizing {file_path}")
+        logging.info(f"Seqpos {args.seqpos}")
         tokenizer.train([str(file_path)], trainer)
 
     # Add standard BERT post-processing.
