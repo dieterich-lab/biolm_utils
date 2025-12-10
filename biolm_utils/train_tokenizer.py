@@ -16,16 +16,12 @@ from biolm_utils.rna_datasets import RNABaseDataset
 
 def tokenize(args):
     file_path = Path(args.filepath)
-    logging.info("tokenize")
     if args.samplesize is not None:
-        logging.info("1. IF")
-
         sample_file_path = (
             file_path.parent / (file_path.stem + f"_{args.samplesize}_samples")
         ).with_suffix(file_path.suffix)
 
         with open(args.filepath) as f:
-            logging.info("Open FIlepath")
             newlines = [f.tell()]
             line = f.readline()
             while line:
@@ -47,19 +43,16 @@ def tokenize(args):
     if args.encoding == "bpe":
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
     elif args.encoding == "atomic":
-        logging.info("Create TOkenizer")
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
 
     # normalization and pre-encoding.
     tok_seq = list()
     if args.encoding not in ["3mer", "5mer"]:
-        logging.info("Byte Pair")
         # Normalization for Byte Pair Encoding
         norm_seq = list()
 
         # Replace multi-char markers by ASCII character.
         if args.atomicreplacements is not None:
-            logging.info("args.atomicreplacements is not None")
             for k, v in eval(args.atomicreplacements).items():
                 if args.tokensep is not None:
                     norm_seq.append(
@@ -86,7 +79,6 @@ def tokenize(args):
 
         # Replace the specific information.
         if args.specifiersep is not None:
-            logging.info("args.specifiersep is not None")
             norm_seq.append(
                 Replace(Regex(rf"{args.specifiersep}[^{args.tokensep}]*"), "")
             )
@@ -99,16 +91,12 @@ def tokenize(args):
             tokenizer.decoder = decoders.ByteLevel()
         elif args.encoding == "atomic":
             if args.tokensep is not None:
-                logging.info("args.tokensep is not None")
                 norm_seq.append(Replace(args.tokensep, " "))
             else:
                 tok_seq.append(Split(pattern=Regex("."), behavior="isolated"))
 
             tok_seq.append(WhitespaceSplit())
         norm_seq.append(Replace('"', ""))
-        logging.info("Norm Seq:")
-        for n in norm_seq:
-            logging.info(n)
         tokenizer.normalizer = Normseq(norm_seq)
     elif args.encoding in ["3mer", "5mer"]:
         # The 3mer/5mer processing is too complex to be implemented with the tokenizer regex patterns.
@@ -116,7 +104,6 @@ def tokenize(args):
         # The actual tokenizer is then just a white space tokenizer.
         tok_seq.append(WhitespaceSplit())
         with open(file_path, encoding="utf-8") as f:
-            logging.info("HIER NICHT")
             sample_lines = [
                 line
                 for line in f.read().splitlines()
@@ -146,8 +133,6 @@ def tokenize(args):
 
     # Create an actual pre-tokenization sequence.
     seq = Sequence(pre_seq + tok_seq)
-    logging.info("seq")
-    logging.info(seq)
     tokenizer.pre_tokenizer = seq
 
     # We use the same special tokens as in BERT, no matter what model we actually use.
@@ -175,7 +160,6 @@ def tokenize(args):
             tokenizer.train([tmp.name], trainer)
     else:
         logging.info(f"Tokenizing {file_path}")
-        logging.info(f"Seqpos {args.seqpos}")
         tokenizer.train([str(file_path)], trainer)
 
     # Add standard BERT post-processing.
