@@ -116,6 +116,7 @@ def tokenize(args):
         # The actual tokenizer is then just a white space tokenizer.
         tok_seq.append(WhitespaceSplit())
         with open(file_path, encoding="utf-8") as f:
+            logging.info("HIER NICHT")
             sample_lines = [
                 line
                 for line in f.read().splitlines()
