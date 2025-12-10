@@ -136,7 +136,7 @@ def tokenize(args):
     pre_seq.append(
         Split(
             pattern=Regex(
-                f"([^{args.columnsep}]*{args.columnsep}){{{int(args.seqpos) - 1}}}"
+                f"^([^{args.columnsep}]*{args.columnsep}){{{int(args.seqpos) - 1}}}"
             ),
             behavior="removed",
         )
