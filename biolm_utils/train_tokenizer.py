@@ -202,7 +202,7 @@ def tokenize(args):
     # Metadata links entfernen
     pre_seq.append(
         Split(
-            pattern=Regex(f"([^{columnsep}]*{columnsep}){{{int(seqpos) - 1}}}"),
+            pattern=Regex(f"^([^{columnsep}]*{columnsep}){{{int(seqpos) - 1}}}"),
             behavior="removed",
         )
     )
