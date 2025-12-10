@@ -192,8 +192,8 @@ def tokenize(args):
     
     # Simulieren Sie Ihre Argumente
     columnsep = "\t"  # Prüfen Sie: Ist es wirklich ein Tab in Ihrer Datei?
-    seqpos = 2        # Die gewünschte Spalte (1-basiert)
-    test_line = "ID123\tHIER_IST_DIE_SEQUENZ\tLABEL_XYZ" # Eine Beispielzeile aus Ihrer Datei
+    seqpos = 4        # Die gewünschte Spalte (1-basiert)
+    test_line = "ID123\tSpalte2\tSpalte3\tHIER_IST_DIE_SEQUENZ\tLABEL_XYZ" # Eine Beispielzeile aus Ihrer Datei
 
     # Nachbau der Logik aus train_tokenizer.py
     pre_seq = list()
