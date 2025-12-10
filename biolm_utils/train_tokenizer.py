@@ -189,3 +189,31 @@ def tokenize(args):
     # Save the tokenizer.
     logging.info(f"Saving tokenizer to {TOKENIZERFILE}")
     tokenizer.save(str(TOKENIZERFILE))
+    
+    # Simulieren Sie Ihre Argumente
+    columnsep = "\t"  # Prüfen Sie: Ist es wirklich ein Tab in Ihrer Datei?
+    seqpos = 2        # Die gewünschte Spalte (1-basiert)
+    test_line = "ID123\tHIER_IST_DIE_SEQUENZ\tLABEL_XYZ" # Eine Beispielzeile aus Ihrer Datei
+
+    # Nachbau der Logik aus train_tokenizer.py
+    pre_seq = list()
+    pre_seq.append(Split(pattern="\n", behavior="removed"))
+
+    # Metadata links entfernen
+    pre_seq.append(
+        Split(
+            pattern=Regex(f"([^{columnsep}]*{columnsep}){{{int(seqpos) - 1}}}"),
+            behavior="removed",
+        )
+    )
+
+    # Metadata rechts entfernen
+    pre_seq.append(Split(pattern=Regex(f"{columnsep}.*"), behavior="removed"))
+
+    # Pre-Tokenizer erstellen
+    pre_tokenizer = Sequence(pre_seq)
+
+    # Testen
+    logging.info(f"Original: '{test_line}'")
+    splits = pre_tokenizer.pre_tokenize_str(test_line)
+    logging.info(f"Ergebnis: {splits}")
