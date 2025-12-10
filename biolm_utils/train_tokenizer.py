@@ -12,8 +12,7 @@ from tokenizers.processors import BertProcessing
 from biolm_utils.entry import TOKENIZERFILE, logging
 from biolm_utils.rna_datasets import RNABaseDataset
 
-# UNIREFSIZE = 152_670_237
-
+# UNIREFSIZE = 152_670_23
 
 def tokenize(args):
     file_path = Path(args.filepath)
@@ -107,7 +106,8 @@ def tokenize(args):
 
             tok_seq.append(WhitespaceSplit())
         norm_seq.append(Replace('"', ""))
-
+        logging.info("Norm Seq:")
+        logging.info(norm_seq)
         tokenizer.normalizer = Normseq(norm_seq)
     elif args.encoding in ["3mer", "5mer"]:
         # The 3mer/5mer processing is too complex to be implemented with the tokenizer regex patterns.
@@ -144,6 +144,8 @@ def tokenize(args):
 
     # Create an actual pre-tokenization sequence.
     seq = Sequence(pre_seq + tok_seq)
+    logging.info("seq")
+    logging.info(seq)
     tokenizer.pre_tokenizer = seq
 
     # We use the same special tokens as in BERT, no matter what model we actually use.
