@@ -123,7 +123,7 @@ def _validate_split_exclusivity(args: argparse.Namespace):
         )
 
     # Condition 2: At least one must be set.
-    if args.mode != "tokenize" and not ratio_is_set and not pos_is_set:
+    if args.mode not in ["tokenize", "predict", "interpret"] and not ratio_is_set and not pos_is_set:
         raise argparse.ArgumentError(
             None,
             f"Either '--splitratio' or '--splitpos' must be provided to define data splits.",
