@@ -326,7 +326,8 @@ def main():
     if args.mode == "tokenize":
         tokenize(args)
         return
-
+    print("TOKENIZERFILE", TOKENIZERFILE)
+    stop
     # Initialize tokenizer and dataset, making them available for the `run` function.
     tokenizer = get_tokenizer(
         args, TOKENIZERFILE, config.TOKENIZER_CLS, config.PRETRAINING_REQUIRED
