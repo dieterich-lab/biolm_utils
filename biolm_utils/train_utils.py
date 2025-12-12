@@ -112,7 +112,7 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls, pretraining_required):
         )
         # else:
         #     tokenizer_config_file = tokenizer_file.parent / "tokenizer_config.json"
-
+        print(tokenizer_file.parent)
         # if pretraining_required:
         with open(
             tokenizer_config_file,
