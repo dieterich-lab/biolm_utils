@@ -112,7 +112,6 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls, pretraining_required):
             )
         else:
             tokenizer_config_file = tokenizer_file.parent / "tokenizer_config.json"
-        print(tokenizer_file.parent)
         # if pretraining_required:
         with open(
             tokenizer_config_file,
@@ -136,9 +135,6 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls, pretraining_required):
 
     with open(tokenizer_file, "r") as f:
         tokenizer_json = json.load(f)
-    print(tokenizer_file)
-    print("-"*50)
-    print(tok_config)
     tokenizer_json["pre_tokenizer"]["pretokenizers"][1]["pattern"][
         "Regex"
     ] = f"^([^{args.columnsep}]*{args.columnsep}){{{int(args.seqpos) - 1}}}"
@@ -208,7 +204,6 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls, pretraining_required):
 
 
 def get_dataset(args, tokenizer, add_special_tokens, dataset_file, dataset_cls):
-    print(dataset_file)
     if (
         not dataset_file.exists()  # required data file doesn't exist yet
         or args.getdata  # only tokenize the data and exit
