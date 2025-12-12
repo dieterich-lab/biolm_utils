@@ -106,12 +106,12 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls, pretraining_required):
         model_max_len = args.blocksize
 
     else:
-        # elif args.mode == "fine-tune":
-        tokenizer_config_file = (
-            tokenizer_file.parent / "pre-train" / "tokenizer_config.json"
-        )
-        # else:
-        #     tokenizer_config_file = tokenizer_file.parent / "tokenizer_config.json"
+        if pretraining_required:
+            tokenizer_config_file = (
+                tokenizer_file.parent / "pre-train" / "tokenizer_config.json"
+            )
+        else:
+            tokenizer_config_file = tokenizer_file.parent / "tokenizer_config.json"
         print(tokenizer_file.parent)
         # if pretraining_required:
         with open(
