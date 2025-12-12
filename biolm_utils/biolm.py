@@ -266,7 +266,7 @@ def test(
     full_dataset,
     model_cls,
     config,
-    model,
+    model = None,
 ):
     """Handles the model testing and prediction."""
     trainer_cls = _get_trainer_class(args.mode, args.task)
