@@ -113,33 +113,35 @@ def get_tokenizer(args, tokenizer_file, tokenizer_cls, pretraining_required):
         # else:
         #     tokenizer_config_file = tokenizer_file.parent / "tokenizer_config.json"
 
-        if pretraining_required:
-            with open(
-                tokenizer_config_file,
-                "r",
-            ) as ff:
-                tok_config = json.load(ff)
-                trunc_side = tok_config["truncation_side"]
-                model_max_len = tok_config["model_max_length"]
-                cls_token = tok_config["cls_token"]
-                unk_token = tok_config["unk_token"]
-                mask_token = tok_config["mask_token"]
-                pad_token = tok_config["pad_token"]
-                sep_token = tok_config["sep_token"]
-                eos_token = tok_config["eos_token"]
-                bos_token = tok_config["bos_token"]
-            logger.info(
-                f"Loaded tokenizer config from {tokenizer_file.parent / 'tokenizer_config.json'} and setting it to {model_max_len} model max length"
-            )
+        # if pretraining_required:
+        with open(
+            tokenizer_config_file,
+            "r",
+        ) as ff:
+            tok_config = json.load(ff)
+            trunc_side = tok_config["truncation_side"]
+            model_max_len = tok_config["model_max_length"]
+            cls_token = tok_config["cls_token"]
+            unk_token = tok_config["unk_token"]
+            mask_token = tok_config["mask_token"]
+            pad_token = tok_config["pad_token"]
+            sep_token = tok_config["sep_token"]
+            eos_token = tok_config["eos_token"]
+            bos_token = tok_config["bos_token"]
+        logger.info(
+            f"Loaded tokenizer config from {tokenizer_file.parent / 'tokenizer_config.json'} and setting it to {model_max_len} model max length"
+        )
         # Remove the meta data left and right correctly
         # [1] and [2] refer to the position where the sequence is isolated by means of the `columnsep`
 
     with open(tokenizer_file, "r") as f:
         tokenizer_json = json.load(f)
-
+    print(tokenizer_file)
+    print("-"*50)
+    print(tok_config)
     tokenizer_json["pre_tokenizer"]["pretokenizers"][1]["pattern"][
         "Regex"
-    ] = f"([^{args.columnsep}]*{args.columnsep}){{{int(args.seqpos) - 1}}}"
+    ] = f"^([^{args.columnsep}]*{args.columnsep}){{{int(args.seqpos) - 1}}}"
     tokenizer_json["pre_tokenizer"]["pretokenizers"][2]["pattern"][
         "Regex"
     ] = f"{args.columnsep}.*"
