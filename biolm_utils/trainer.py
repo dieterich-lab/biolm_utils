@@ -7,6 +7,7 @@ class RegressionTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False):
         targets = inputs.pop("labels")
         inputs.pop("qualities", None)
+        print(inputs)
         outputs = model(**inputs)
         logits = outputs.get("logits")
         targets = targets.type(logits.dtype)
