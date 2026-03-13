@@ -266,7 +266,7 @@ def test(
     full_dataset,
     model_cls,
     config,
-    model,
+    model = None,
 ):
     """Handles the model testing and prediction."""
     trainer_cls = _get_trainer_class(args.mode, args.task)
@@ -326,7 +326,6 @@ def main():
     if args.mode == "tokenize":
         tokenize(args)
         return
-
     # Initialize tokenizer and dataset, making them available for the `run` function.
     tokenizer = get_tokenizer(
         args, TOKENIZERFILE, config.TOKENIZER_CLS, config.PRETRAINING_REQUIRED

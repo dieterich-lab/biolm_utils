@@ -12,13 +12,11 @@ from tokenizers.processors import BertProcessing
 from biolm_utils.entry import TOKENIZERFILE, logging
 from biolm_utils.rna_datasets import RNABaseDataset
 
-# UNIREFSIZE = 152_670_237
-
+# UNIREFSIZE = 152_670_23
 
 def tokenize(args):
     file_path = Path(args.filepath)
     if args.samplesize is not None:
-
         sample_file_path = (
             file_path.parent / (file_path.stem + f"_{args.samplesize}_samples")
         ).with_suffix(file_path.suffix)
@@ -99,7 +97,6 @@ def tokenize(args):
 
             tok_seq.append(WhitespaceSplit())
         norm_seq.append(Replace('"', ""))
-
         tokenizer.normalizer = Normseq(norm_seq)
     elif args.encoding in ["3mer", "5mer"]:
         # The 3mer/5mer processing is too complex to be implemented with the tokenizer regex patterns.
@@ -126,7 +123,7 @@ def tokenize(args):
     pre_seq.append(
         Split(
             pattern=Regex(
-                f"([^{args.columnsep}]*{args.columnsep}){{{int(args.seqpos) - 1}}}"
+                f"^([^{args.columnsep}]*{args.columnsep}){{{int(args.seqpos) - 1}}}"
             ),
             behavior="removed",
         )
