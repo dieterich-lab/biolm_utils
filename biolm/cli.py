@@ -1,6 +1,7 @@
 """CLI entry point and argument parsing."""
 
 import warnings
+from pathlib import Path
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -13,9 +14,11 @@ warnings.filterwarnings(
     message="Was asked to gather along dimension 0, but all input tensors were scalars; will instead unsqueeze and return a vector.",
 )
 
+HYDRA_CONFIG_PATH = str(Path(__file__).resolve().parent / "conf")
+
 
 @hydra.main(
-    config_path="/prj/RNA_NLP/biolm_utils/biolm/conf",
+    config_path=HYDRA_CONFIG_PATH,
     config_name="config",
     version_base="1.1",
 )

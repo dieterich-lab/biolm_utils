@@ -82,7 +82,8 @@ BioLM 2.0 development happens on the `biolm-2.0` branch—`main` is the legacy l
   - Framework in "developer mode" = install BioLM with dev extras (`--with dev`).
   - Plugin in "developer mode" = editable plugin install (`develop-plugin` / `pip install -e`).
 
-  Remove a plugin later via `poetry run pip uninstall <plugin-name>`.
+  Remove a plugin later via `poetry run biolm remove-plugin <plugin-name>` (recommended).
+  `poetry run pip uninstall <distribution-name>` also works as a low-level fallback when you already know the exact package name.
 
 If you previously used `install-plugin` and no longer want the cloned copies, you can safely remove the `./plugins` directory; the CLI will recreate it on demand for future user installs.
 
@@ -122,7 +123,7 @@ Below are the canonical commands, vital configuration knobs, and outputs for eac
 **Tokenize**
 
 ```bash
-poetry run biolm tokenize --config-path ./my_experiment
+poetry run biolm mode=tokenize plugin=<plugin_name> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 ```
 
 - Key config values: `data_source.filepath`, `tokenization.encoding`, `tokenization.vocabsize`.
@@ -131,7 +132,7 @@ poetry run biolm tokenize --config-path ./my_experiment
 **Pre-train**
 
 ```bash
-poetry run biolm pre-train --config-path ./my_experiment
+poetry run biolm mode=pre-train plugin=<plugin_name> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 ```
 
 - Requires a plugin whose config sets `task: pre-train` (see `mode/pre-train.yaml`).
@@ -141,7 +142,7 @@ poetry run biolm pre-train --config-path ./my_experiment
 **Fine-tune**
 
 ```bash
-poetry run biolm fine-tune --config-path ./my_experiment
+poetry run biolm mode=fine-tune plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 ```
 
 - Make sure `plugin` points to the installed model package and `task` matches the plugin expectation (classification/regression).
@@ -151,7 +152,7 @@ poetry run biolm fine-tune --config-path ./my_experiment
 **Predict**
 
 ```bash
-poetry run biolm predict --config-path ./my_experiment inference.pretrainedmodel=/path/to/model.ckpt
+poetry run biolm mode=predict plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv inference.pretrainedmodel=/path/to/model.ckpt outputpath=/tmp/biolm_run
 ```
 
 - Ensure `inference.pretrainedmodel` is set to the checkpoint produced by fine-tuning or pre-training.
@@ -161,7 +162,7 @@ poetry run biolm predict --config-path ./my_experiment inference.pretrainedmodel
 **Interpret**
 
 ```bash
-poetry run biolm interpret --config-path ./my_experiment inference.pretrainedmodel=/path/to/model.ckpt
+poetry run biolm mode=interpret plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv inference.pretrainedmodel=/path/to/model.ckpt outputpath=/tmp/biolm_run
 ```
 
 - Core options under `inference.looscores`:
@@ -178,10 +179,16 @@ poetry run biolm interpret --config-path ./my_experiment inference.pretrainedmod
 Run any mode with:
 
 ```bash
-poetry run biolm {tokenize | pre-train | fine-tune | predict | interpret} --config-path ./my_experiment
+poetry run biolm mode=<tokenize|pre-train|fine-tune|predict|interpret> plugin=<plugin_name> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 ```
 
-Always pass an explicit `--config-path`/`--config-name`; runtime initialization no longer relies on implicit defaults.
+Optional equivalent invocation:
+
+```bash
+poetry run python -m biolm.runner mode=fine-tune plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
+```
+
+`--config-path`/`--config-name` are optional. Use them only when you provide a complete custom Hydra config tree.
 
 ## 🧭 Execution Flow (at a glance)
 
@@ -258,7 +265,7 @@ override defaults from [biolm/conf/mode/fine-tune.yaml](biolm/conf/mode/fine-tun
 (different splits, MLflow hooks, debug flags, etc.). Run the CLI with:
 
 ```bash
-poetry run biolm fine-tune --config-path ./my_experiment --config-name config
+poetry run biolm mode=fine-tune plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 ```
 
 If the file does not pin the mode yet, append `mode=fine-tune` to resolve the ??? default.
@@ -269,10 +276,10 @@ With a config directory ready, run the modes sequentially as follows (adjust for
 does not require pre-training):
 
 ```bash
-poetry run biolm tokenize --config-path ./my_experiment --config-name config
-poetry run biolm pre-train --config-path ./my_experiment --config-name config
-poetry run biolm fine-tune --config-path ./my_experiment --config-name config
-poetry run biolm predict --config-path ./my_experiment --config-name config inference.pretrainedmodel=/tmp/biolm_quickstart/fine-tune/model.safetensors
+poetry run biolm mode=tokenize plugin=<plugin_name> data_source.filepath=examples/data/quickstart_sequences.tsv data_source.stripheader=true data_source.idpos=1 data_source.seqpos=3 data_source.labelpos=2 outputpath=/tmp/biolm_quickstart
+poetry run biolm mode=pre-train plugin=<plugin_name> data_source.filepath=examples/data/quickstart_sequences.tsv data_source.stripheader=true data_source.idpos=1 data_source.seqpos=3 data_source.labelpos=2 outputpath=/tmp/biolm_quickstart
+poetry run biolm mode=fine-tune plugin=<plugin_name> task=classification data_source.filepath=examples/data/quickstart_sequences.tsv data_source.stripheader=true data_source.idpos=1 data_source.seqpos=3 data_source.labelpos=2 outputpath=/tmp/biolm_quickstart
+poetry run biolm mode=predict plugin=<plugin_name> task=classification data_source.filepath=examples/data/quickstart_sequences.tsv data_source.stripheader=true data_source.idpos=1 data_source.seqpos=3 data_source.labelpos=2 inference.pretrainedmodel=/tmp/biolm_quickstart/fine-tune/model.safetensors outputpath=/tmp/biolm_quickstart
 ```
 
 Skip the `pre-train` command if your plugin (for example, a CNN) only needs fine-tuning. The
@@ -354,7 +361,7 @@ Each mode writes `logs/<timestamp>.log` plus the dataset cache (`<mode>_dataset.
 
 BioLM integrates with MLflow for experiment tracking. To enable MLflow:
 
-1. Set `mlflow.enabled: true` in the configuration.
+1. Set `settings.mlflow.enabled: true` in the configuration.
 2. Access the MLflow UI:
 
    ```bash
