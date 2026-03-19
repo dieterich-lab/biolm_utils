@@ -3,7 +3,7 @@
 # Run BioLM Hydra configuration smoke tests via Slurm job.
 #SBATCH --job-name=biolm-hydra-smoke
 #SBATCH --output=/prj/RNA_NLP/biolm_utils/internal_outputs/slurm/hydra_smoke_tests.log
-#SBATCH --partition=cpu
+#SBATCH --partition=gpu
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=2
 #SBATCH --time=01:00:00
