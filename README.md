@@ -278,7 +278,9 @@ does not require pre-training):
 **For Saluki (CNN-based, no pre-training needed):**
 
 ```bash
-# Fine-tune directly (no tokenization or pre-training required)
+# Tokenize data (required for atomic encoding)
+poetry run biolm mode=tokenize plugin=saluki data_source.filepath=examples/data/quickstart_sequences.tsv data_source.stripheader=true data_source.idpos=1 data_source.seqpos=3 data_source.labelpos=2 outputpath=/tmp/biolm_quickstart
+# Fine-tune directly (no pre-training required)
 poetry run biolm mode=fine-tune plugin=saluki task=classification data_source.filepath=examples/data/quickstart_sequences.tsv data_source.stripheader=true data_source.idpos=1 data_source.seqpos=3 data_source.labelpos=2 outputpath=/tmp/biolm_quickstart
 poetry run biolm mode=predict plugin=saluki task=classification data_source.filepath=examples/data/quickstart_sequences.tsv data_source.stripheader=true data_source.idpos=1 data_source.seqpos=3 data_source.labelpos=2 inference.pretrainedmodel=/tmp/biolm_quickstart/fine-tune/model.safetensors outputpath=/tmp/biolm_quickstart
 poetry run biolm mode=interpret plugin=saluki task=classification data_source.filepath=examples/data/quickstart_sequences.tsv data_source.stripheader=true data_source.idpos=1 data_source.seqpos=3 data_source.labelpos=2 inference.pretrainedmodel=/tmp/biolm_quickstart/fine-tune/model.safetensors outputpath=/tmp/biolm_quickstart
