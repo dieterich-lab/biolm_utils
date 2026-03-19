@@ -39,6 +39,10 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           poetry run pytest -q tests --ignore=tests/integration/test_plugin_discovery.py
+      - name: Run Hydra configuration smoke tests
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          poetry run pytest -q tests/test_hydra_config_smoke.py
       - name: Fail if deprecated config keys present
         run: |
           set -e
