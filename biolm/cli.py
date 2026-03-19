@@ -77,8 +77,8 @@ def parse_args():
         print("  remove-plugin <name>   Uninstall a plugin")
         print("  plugin <command>       Access advanced plugin management")
         print("\n" + "-" * 20 + "\n")
-        # Continue to Hydra to show configuration help
-        _hydra_main()
+        print("For mode-specific help, run: biolm mode=<mode> --help")
+        print("Available modes: tokenize, pre-train, fine-tune, predict, interpret")
         return
 
     if len(sys.argv) > 1:
