@@ -43,7 +43,9 @@ BioLM 2.0 development happens on the `biolm-2.0` branch—`main` is the legacy l
 
 ## 🔌 Adding Plugins
 
-- **Standard (user) install — clones into `./plugins/`**
+- **Choose one path (most users only need Path A):**
+
+### Path A — Run an existing plugin (recommended)
 
   ```bash
   # inside the biolm_utils repo
@@ -57,11 +59,17 @@ BioLM 2.0 development happens on the `biolm-2.0` branch—`main` is the legacy l
   poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=saluki-2.0"
   ```
 
-  `install-plugin` clones the plugin repository to `./plugins/<name>`, installs it in editable mode, and wires the entry point listed under `biolm.plugins`. Use this path when you want to run plugins without maintaining another working tree.
+  What `install-plugin` does:
+  - Clones the plugin repo into `./plugins/<name>`.
+  - Installs it into the active Poetry environment (editable install) so BioLM can load it.
+
+  Use this path when you want to run a plugin and do not plan to modify plugin source code.
 
   **Plugin discovery:** As long as the plugin is installed in the same Poetry environment (via `install-plugin` or `develop-plugin`), BioLM automatically discovers the entry point—no extra registration steps are needed.
 
-- **Developer install — keep framework metadata clean**
+### Path B — Develop a plugin locally
+
+If you are editing plugin code, first clone the plugin repository locally, then point BioLM to that local path.
 
   ```bash
   # inside the biolm_utils repo
