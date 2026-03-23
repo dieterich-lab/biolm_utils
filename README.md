@@ -59,7 +59,7 @@ BioLM 2.0 development happens on the `biolm-2.0` branch—`main` is the legacy l
 
   `install-plugin` clones the plugin repository to `./plugins/<name>`, installs it in editable mode, and wires the entry point listed under `biolm.plugins`. Use this path when you want to run plugins without maintaining another working tree.
 
-  **Plugin discovery:** As long as the plugin is installed in the same Poetry environment (via `install-plugin`, `develop-plugin`, `poetry run pip install -e <path>`, etc.), BioLM automatically discovers the entry point—no extra registration steps are needed.
+  **Plugin discovery:** As long as the plugin is installed in the same Poetry environment (via `install-plugin` or `develop-plugin`), BioLM automatically discovers the entry point—no extra registration steps are needed.
 
 - **Developer install — keep framework metadata clean**
 
@@ -69,21 +69,11 @@ BioLM 2.0 development happens on the `biolm-2.0` branch—`main` is the legacy l
   poetry run biolm develop-plugin /path/to/your/plugin
   ```
 
+  Use `poetry install --no-interaction` only when the framework environment is not set up yet (if you already ran `./install.sh`, you can run only `biolm develop-plugin`).
+
   This keeps `pyproject.toml` unchanged while wiring editable installs through the CLI. Edits in your plugin repo are picked up immediately.
 
-  `--with dev` is **optional** and only needed when you also want BioLM framework development dependencies (for example, running framework tests/linters/debug tooling):
-
-  ```bash
-  # optional: only for framework contributors
-  poetry install --no-interaction --with dev
-  ```
-
-  In short:
-  - Framework in "developer mode" = install BioLM with dev extras (`--with dev`).
-  - Plugin in "developer mode" = editable plugin install (`develop-plugin` / `pip install -e`).
-
   Remove a plugin later via `poetry run biolm remove-plugin <plugin-name>` (recommended).
-  `poetry run pip uninstall <distribution-name>` also works as a low-level fallback when you already know the exact package name.
 
 If you previously used `install-plugin` and no longer want the cloned copies, you can safely remove the `./plugins` directory; the CLI will recreate it on demand for future user installs.
 
