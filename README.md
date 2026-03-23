@@ -73,11 +73,10 @@ If you are editing plugin code, first clone the plugin repository locally, then 
 
   ```bash
   # inside the biolm_utils repo
-  poetry install --no-interaction
   poetry run biolm develop-plugin /path/to/your/plugin
   ```
 
-  Use `poetry install --no-interaction` only when the framework environment is not set up yet (if you already ran `./install.sh`, you can run only `biolm develop-plugin`).
+  If the framework environment is not set up yet, run `./install.sh` first.
 
   This keeps `pyproject.toml` unchanged while wiring editable installs through the CLI. Edits in your plugin repo are picked up immediately.
 
