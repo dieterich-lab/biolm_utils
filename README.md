@@ -185,7 +185,7 @@ Optional equivalent invocation:
 poetry run python -m biolm.runner mode=fine-tune plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 ```
 
-`--config-path`/`--config-name` are optional. Use them only when you provide a complete custom Hydra config tree.
+`--config-path`/`--config-name` are optional. You only need them when your own config file is outside the built-in `biolm/conf` directory.
 
 ## 🧭 Execution Flow (at a glance)
 
@@ -197,17 +197,34 @@ poetry run python -m biolm.runner mode=fine-tune plugin=<plugin_name> task=<clas
 
 ## ⚙️ Configuration & Quickstart
 
-BioLM uses Hydra to compose the framework-wide base config ([biolm/conf/config.yaml](biolm/conf/config.yaml#L3-L90)) with
-mode-specific overrides ([biolm/conf/mode](biolm/conf/mode)) and any user-provided experiment files.
-Organize experiments in dedicated directories so `--config-path`/`--config-name` can find them easily.
+BioLM uses Hydra composition in layers:
 
-### Minimal experiment config
+1. **Base config (always loaded):** [biolm/conf/config.yaml](biolm/conf/config.yaml#L3-L90)
+2. **Mode config (always loaded):** one file from [biolm/conf/mode](biolm/conf/mode), selected via `mode=...`
+3. **Task config (required for some modes):** one file from `biolm/conf/task`, selected via `task=...`
+4. **Experiment config (optional):** your own `config.yaml` when you want reusable project-specific defaults
+
+You do **not** need to maintain all of these files yourself. In practice:
+- CLI-only runs need only runtime overrides (`mode=... plugin=... ...`).
+- A single experiment `config.yaml` is optional for convenience/reproducibility.
+- For `fine-tune` / `predict` / `interpret`, Hydra now requires `task=classification` or `task=regression` during composition.
+
+### Minimal ways to run
+
+**A) No experiment file (fastest way):**
+
+```bash
+poetry run biolm mode=fine-tune plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
+```
+
+**B) One experiment file (recommended for repeat runs):**
 
 Pick a plugin, output path, and the options that change per run. Here is a minimal `config.yaml` you
 can drop into any experiment directory:
 
 ```yaml
 plugin: <plugin_name>
+mode: fine-tune
 outputpath: /tmp/biolm_quickstart
 task: classification
 data_source:
@@ -222,6 +239,12 @@ training:
   batchsize: 4
 ```
 
+Then run it with:
+
+```bash
+poetry run biolm --config-path /path/to/experiment --config-name config
+```
+
 ### Hydra composition
 
 The shared base config declares:
@@ -232,40 +255,59 @@ defaults:
   - _self_
 ```
 
-This means Hydra expects you to resolve a mode file (e.g., the `mode/fine-tune.yaml` bundle) before the CLI can run. You can do this either by adding:
+This means Hydra expects you to resolve a mode file (e.g., the `mode/fine-tune.yaml` bundle) before the CLI can run. For task-dependent modes (`fine-tune` / `predict` / `interpret`), Hydra also expects a task selection because those mode files include a task default placeholder.
+
+You can resolve mode/task either in your experiment file or by passing them on the command line.
+
+Example in config file:
 
 ```yaml
 defaults:
   - mode: fine-tune
+  - task: classification
   - _self_
 ```
 
-inside your experiment config or by passing `mode=fine-tune` on the command line.
+Or via CLI overrides: `mode=fine-tune task=classification`.
 
-Hydra merges the base config, the selected mode, your experiment config, and any runtime overrides
+Hydra merges the base config, selected mode config, selected task config (when used), optional experiment config, and runtime overrides
 (for example, `training.nepochs=50` or `data_source.filepath=/new/path`). That keeps the common
 defaults inside `biolm/conf` untouched while letting you customize only the pieces that change per run.
 
 ### Custom experiment directories
 
-Structure each experiment like this:
+You can keep experiment files as simple as:
 
 ```
 my_experiment/
-├── config.yaml
-└── mode/
-    └── fine-tune.yaml
+└── config.yaml
 ```
 
-Drop the minimal config above into `config.yaml` and add `mode/fine-tune.yaml` when you need to
-override defaults from [biolm/conf/mode/fine-tune.yaml](biolm/conf/mode/fine-tune.yaml#L1-L10)
-(different splits, MLflow hooks, debug flags, etc.). Run the CLI with:
+Add custom mode files (for example `my_experiment/mode/fine-tune.yaml`) only when you intentionally
+want to override built-in mode defaults from [biolm/conf/mode/fine-tune.yaml](biolm/conf/mode/fine-tune.yaml#L1-L10).
+
+`--config-path` and `--config-name` mean:
+
+- `--config-path`: directory where Hydra should look for your config files.
+- `--config-name`: filename (without `.yaml`) to load from that directory.
+
+Example:
 
 ```bash
-poetry run biolm mode=fine-tune plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
+poetry run biolm --config-path my_experiment --config-name config
 ```
 
-If the file does not pin the mode yet, append `mode=fine-tune` to resolve the ??? default.
+If your config file does not pin `mode`, append `mode=...` on the CLI.
+
+### When is `task` required?
+
+| Mode | `task` required? | Allowed / typical value |
+|------|-------------------|--------------------------|
+| `tokenize` | No | Not used |
+| `pre-train` | No | Not used (framework runs MLM pre-training path) |
+| `fine-tune` | Yes | `classification` or `regression` |
+| `predict` | Yes | `classification` or `regression` |
+| `interpret` | Yes | `classification` or `regression` |
 
 ### Quickstart commands
 

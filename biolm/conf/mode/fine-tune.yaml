@@ -1,6 +1,10 @@
 # @package _global_
 
 # Fine-tune specific settings
+defaults:
+  - /task: ???
+  - _self_
+
 mode: fine-tune
 data_source:
   crossvalidation: false

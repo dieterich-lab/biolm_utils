@@ -1,6 +1,10 @@
 # @package _global_
 
 # Interpret specific settings
+defaults:
+  - /task: ???
+  - _self_
+
 mode: interpret
 inference:
   looscores:

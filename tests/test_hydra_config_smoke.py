@@ -20,6 +20,7 @@ def test_hydra_config_composition_basic():
             "-m",
             "biolm.cli",
             "mode=fine-tune",
+            "task=classification",
             "--cfg",
             "job",
         ],
@@ -41,6 +42,7 @@ def test_hydra_config_with_plugin():
             "biolm.cli",
             "mode=fine-tune",
             "plugin=saluki",
+            "task=classification",
             "--cfg",
             "job",
         ],
@@ -54,13 +56,66 @@ def test_hydra_config_with_plugin():
     assert "mode: fine-tune" in result.stdout
 
 
+def test_hydra_config_fine_tune_without_task_fails():
+    """Fine-tune mode should fail early when task is not selected."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "biolm.cli",
+            "mode=fine-tune",
+            "--cfg",
+            "job",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/prj/RNA_NLP/biolm_utils",
+    )
+
+    assert result.returncode != 0
+    assert "You must specify 'task'" in (result.stderr + result.stdout)
+
+
+def test_hydra_config_pre_train_without_task():
+    """Test that pre-train mode composes without task override."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "biolm.cli",
+            "mode=pre-train",
+            "plugin=xlnet",
+            "--cfg",
+            "job",
+        ],
+        capture_output=True,
+        text=True,
+        cwd="/prj/RNA_NLP/biolm_utils",
+    )
+
+    assert result.returncode == 0, f"Pre-train config failed: {result.stderr}"
+    assert "mode: pre-train" in result.stdout
+
+
 def test_hydra_config_all_modes():
     """Test that all modes can compose their configurations."""
     modes = ["tokenize", "pre-train", "fine-tune", "predict", "interpret"]
 
     for mode in modes:
         result = subprocess.run(
-            [
+            (
+                [
+                    sys.executable,
+                    "-m",
+                    "biolm.cli",
+                    f"mode={mode}",
+                    "plugin=saluki",
+                    "task=classification",
+                    "--cfg",
+                    "job",
+                ]
+                if mode in ["fine-tune", "predict", "interpret"]
+                else [
                 sys.executable,
                 "-m",
                 "biolm.cli",
@@ -68,7 +123,8 @@ def test_hydra_config_all_modes():
                 "plugin=saluki",
                 "--cfg",
                 "job",
-            ],
+                ]
+            ),
             capture_output=True,
             text=True,
             cwd="/prj/RNA_NLP/biolm_utils",
@@ -87,6 +143,7 @@ def test_hydra_config_with_custom_values():
             "biolm.cli",
             "mode=fine-tune",
             "plugin=saluki",
+            "task=classification",
             "training.nepochs=5",
             "data_source.filepath=/tmp/test.tsv",
             "--cfg",
@@ -109,6 +166,7 @@ def test_hydra_config_file_override(tmp_path):
         """
 mode: fine-tune
 plugin: saluki
+task: classification
 outputpath: /tmp/test_output
 training:
   nepochs: 3
@@ -186,6 +244,7 @@ def test_hydra_config_xlnet_plugin():
             "biolm.cli",
             "mode=fine-tune",
             "plugin=xlnet",
+            "task=classification",
             "--cfg",
             "job",
         ],

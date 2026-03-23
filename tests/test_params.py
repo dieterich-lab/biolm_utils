@@ -11,6 +11,11 @@ class TestParams:
         # Should not raise
         cfg.validate()
 
+    def test_validate_config_pre_train_mode_no_task_required(self):
+        cfg = BioLMConfig(mode="pre-train", task=None)
+        # Should not raise
+        cfg.validate()
+
     def test_validate_config_fine_tune_requires_task(self):
         cfg = BioLMConfig(mode="fine-tune", task=None)
         with pytest.raises(ValueError, match="task is required"):

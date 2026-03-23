@@ -113,8 +113,7 @@ class BioLMConfig:
 
         # Skip split validation for modes that don't use training splits
         if (
-            self.mode in ["tokenize", "predict", "interpret"]
-            or self.task == "pre-train"
+            self.mode in ["tokenize", "predict", "interpret", "pre-train"]
         ):
             return
 

@@ -2,7 +2,6 @@
 
 # Pre-train specific settings
 mode: pre-train
-task: pre-train
 settings:
   mlflow:
     enabled: false

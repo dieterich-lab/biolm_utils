@@ -1,6 +1,10 @@
 # @package _global_
 
 # Predict specific settings
+defaults:
+  - /task: ???
+  - _self_
+
 mode: predict
 inference:
   looscores:
