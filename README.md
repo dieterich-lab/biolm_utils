@@ -185,7 +185,7 @@ Optional equivalent invocation:
 poetry run python -m biolm.runner mode=fine-tune plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 ```
 
-`--config-path`/`--config-name` are optional. You only need them when your own config file is outside the built-in `biolm/conf` directory.
+Hydra has no `--config-file` flag in this CLI. For custom config files, use `--config-path` (directory) and `--config-name` (filename without `.yaml`).
 
 ## 🧭 Execution Flow (at a glance)
 
@@ -214,8 +214,11 @@ You do **not** need to maintain all of these files yourself. In practice:
 **A) No experiment file (fastest way):**
 
 ```bash
+poetry run biolm mode=tokenize plugin=<plugin_name> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 poetry run biolm mode=fine-tune plugin=<plugin_name> task=<classification|regression> data_source.filepath=/path/to/data.tsv outputpath=/tmp/biolm_run
 ```
+
+Use the same `outputpath` for both commands so `fine-tune` can reuse tokenizer artifacts from `tokenize`.
 
 **B) One experiment file (recommended for repeat runs):**
 
@@ -244,6 +247,8 @@ Then run it with:
 ```bash
 poetry run biolm --config-path /path/to/experiment --config-name config
 ```
+
+When running training/inference from that config, start with `mode=tokenize` once per dataset/output path before `fine-tune`.
 
 ### Hydra composition
 
@@ -291,6 +296,8 @@ want to override built-in mode defaults from [biolm/conf/mode/fine-tune.yaml](bi
 - `--config-path`: directory where Hydra should look for your config files.
 - `--config-name`: filename (without `.yaml`) to load from that directory.
 
+For transparency: there is no `--config-file` flag in this interface.
+
 Example:
 
 ```bash
@@ -308,6 +315,8 @@ If your config file does not pin `mode`, append `mode=...` on the CLI.
 | `fine-tune` | Yes | `classification` or `regression` |
 | `predict` | Yes | `classification` or `regression` |
 | `interpret` | Yes | `classification` or `regression` |
+
+Only two task values are supported in task-dependent modes: `classification` and `regression`.
 
 ### Quickstart commands
 
