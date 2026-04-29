@@ -20,7 +20,6 @@ def test_load_config_overrides_accepts_list():
         [
             "mode=tokenize",
             "debugging.accelerator=cpu",
-            "task=regression",
             "data_source.splitratio=[80, 20]",
             "data_source.filepath=/path/to/data",
         ]
@@ -41,7 +40,6 @@ def test_load_config_rejects_legacy_ngpus_override():
             [
                 "mode=tokenize",
                 "settings.environment.ngpus=3",
-                "task=regression",
                 "data_source.splitratio=[80,20]",
             ]
         )

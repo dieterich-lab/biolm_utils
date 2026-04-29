@@ -8,8 +8,12 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+import importlib.util
 
 import pytest
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_hydra_config_composition_basic():
@@ -26,7 +30,7 @@ def test_hydra_config_composition_basic():
         ],
         capture_output=True,
         text=True,
-        cwd="/prj/RNA_NLP/biolm_utils",
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode == 0, f"Config composition failed: {result.stderr}"
@@ -48,7 +52,7 @@ def test_hydra_config_with_plugin():
         ],
         capture_output=True,
         text=True,
-        cwd="/prj/RNA_NLP/biolm_utils",
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode == 0, f"Plugin config failed: {result.stderr}"
@@ -69,7 +73,7 @@ def test_hydra_config_fine_tune_without_task_fails():
         ],
         capture_output=True,
         text=True,
-        cwd="/prj/RNA_NLP/biolm_utils",
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode != 0
@@ -90,7 +94,7 @@ def test_hydra_config_pre_train_without_task():
         ],
         capture_output=True,
         text=True,
-        cwd="/prj/RNA_NLP/biolm_utils",
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode == 0, f"Pre-train config failed: {result.stderr}"
@@ -127,7 +131,7 @@ def test_hydra_config_all_modes():
             ),
             capture_output=True,
             text=True,
-            cwd="/prj/RNA_NLP/biolm_utils",
+            cwd=REPO_ROOT,
         )
 
         assert result.returncode == 0, f"Mode {mode} config failed: {result.stderr}"
@@ -151,7 +155,7 @@ def test_hydra_config_with_custom_values():
         ],
         capture_output=True,
         text=True,
-        cwd="/prj/RNA_NLP/biolm_utils",
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode == 0, f"Custom config failed: {result.stderr}"
@@ -188,7 +192,7 @@ training:
         ],
         capture_output=True,
         text=True,
-        cwd="/prj/RNA_NLP/biolm_utils",
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode == 0, f"Config file failed: {result.stderr}"
@@ -200,14 +204,13 @@ training:
 
 def test_hydra_config_plugin_invariants_enforced():
     """Test that plugin invariants are properly enforced."""
+    if importlib.util.find_spec("saluki_plugin") is None:
+        pytest.skip("saluki_plugin is not installed in this environment")
+
     # Test that saluki enforces atomic encoding
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            """
+    script = """
 import sys
-sys.path.insert(0, '/prj/RNA_NLP/biolm_utils')
+sys.path.insert(0, '__REPO_ROOT__')
 from saluki_plugin.dataset import RNACNNDataset
 try:
     # This should fail because encoding is not atomic
@@ -225,10 +228,17 @@ except ValueError as e:
     else:
         print(f"ERROR: Wrong error: {e}")
         sys.exit(1)
-""",
+""".replace("__REPO_ROOT__", str(REPO_ROOT))
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            script,
         ],
         capture_output=True,
         text=True,
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode == 0, f"Invariant test failed: {result.stderr}"
@@ -250,7 +260,7 @@ def test_hydra_config_xlnet_plugin():
         ],
         capture_output=True,
         text=True,
-        cwd="/prj/RNA_NLP/biolm_utils",
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode == 0, f"XLNet config failed: {result.stderr}"
@@ -269,7 +279,7 @@ def test_hydra_config_help_works():
         ],
         capture_output=True,
         text=True,
-        cwd="/prj/RNA_NLP/biolm_utils",
+        cwd=REPO_ROOT,
     )
 
     assert result.returncode == 0, f"Help failed: {result.stderr}"

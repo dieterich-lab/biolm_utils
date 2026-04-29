@@ -31,7 +31,6 @@ class TestGPUAutodetect:
             [
                 "mode=tokenize",
                 "debugging.accelerator=gpu",
-                "task=regression",
                 "data_source.splitratio=[80, 20]",
                 "data_source.filepath=/path/to/data",
             ]
@@ -46,7 +45,6 @@ class TestGPUAutodetect:
             [
                 "mode=tokenize",
                 "debugging.accelerator=gpu",
-                "task=regression",
                 "data_source.splitratio=[80, 20]",
                 "data_source.filepath=/path/to/data",
             ]
@@ -61,7 +59,6 @@ class TestGPUAutodetect:
             [
                 "mode=tokenize",
                 "debugging.accelerator=gpu",
-                "task=regression",
                 "data_source.splitratio=[80, 20]",
                 "data_source.filepath=/path/to/data",
             ]
