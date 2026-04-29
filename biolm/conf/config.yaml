@@ -1,8 +1,8 @@
 # @package _global_
 
 defaults:
-  - mode: ???
   - _self_
+  - mode: ???
 
 # Core settings
 # mode: tokenize
