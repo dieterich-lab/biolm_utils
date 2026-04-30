@@ -12,8 +12,8 @@ def _parse_plugin_source(source: str) -> tuple[str, str | None]:
 
     Supported forms:
       - https://github.com/org/repo.git
-      - https://github.com/org/repo.git?ref=saluki-2.0
-      - https://github.com/org/repo.git@saluki-2.0
+            - https://github.com/org/repo.git?ref=main
+            - https://github.com/org/repo.git@main
     """
     parsed = urlparse(source)
 
