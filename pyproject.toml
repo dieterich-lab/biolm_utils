@@ -68,7 +68,6 @@ optional = false
 pytest = "^9.0.1"
 pytest-mock = "^3.15.1"
 debugpy = "*"
-pre-commit = "^4.5.1"
 
 [tool.poetry.group.mlflow]
 optional = true

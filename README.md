@@ -459,19 +459,6 @@ With coverage:
 poetry run pytest --cov=biolm --cov-report=html
 ```
 
-### Local commit/push hooks (recommended)
-
-This repository uses `pre-commit` for both `pre-commit` and `pre-push` stages.
-
-Install once per clone:
-
-```bash
-poetry run pre-commit install
-poetry run pre-commit install --hook-type pre-push
-```
-
-Hook lifecycle details and stage behavior are documented in [docs/PLUGIN_CONTRACT.md](docs/PLUGIN_CONTRACT.md#9-local-git-hook-lifecycle-pre-commit-vs-pre-push).
-
 ---
 
 ## 🤝 Contributing
