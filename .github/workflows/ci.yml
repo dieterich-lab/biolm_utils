@@ -82,13 +82,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dieterich-lab/rna_saluki_cnn
-          ref: saluki-2.0
+          ref: main
           path: rna_saluki_cnn
       - name: Checkout XLNet plugin
         uses: actions/checkout@v4
         with:
           repository: dieterich-lab/rna_protein_xlnet
-          ref: xlnet-2.0
+          ref: main
           path: rna_protein_xlnet
       - uses: actions/setup-python@v4
         with:

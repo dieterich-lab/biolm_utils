@@ -24,7 +24,7 @@ poetry run biolm list-plugins
 3. Reinstall Saluki from the correct branch (safe/idempotent if already present).
 
 ```bash
-poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=saluki-2.0"
+poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=main"
 ```
 
 4. Sanity-check entry-point discovery.
@@ -39,7 +39,7 @@ poetry run python -c "import importlib.metadata as m; print([e.name for e in m.e
 poetry run pytest tests/integration/test_plugin_discovery.py
 ```
 
-If step 3 fails with "not a Python project", you are likely on an old branch/layout. Re-run using `?ref=saluki-2.0`.
+If step 3 fails with "not a Python project", verify the plugin repository path and branch ref.
 
 ---
 
@@ -138,13 +138,13 @@ poetry run biolm install-plugin <git-url>
 Branch pinning is supported in one line:
 
 ```bash
-poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=saluki-2.0"
+poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=main"
 ```
 
 Equivalent shorthand for HTTPS URLs:
 
 ```bash
-poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git@saluki-2.0"
+poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git@main"
 ```
 
 Under the hood (`biolm/plugin_manager.py`):
@@ -328,13 +328,11 @@ The cloned branch/repo root lacks `pyproject.toml` or `setup.py`.
 
 ## 8) Notes specific to Saluki
 
-Use the active plugin branch (`saluki-2.0`) when installing from Git:
+Use the active plugin branch (`main`) when installing from Git:
 
 ```bash
-poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=saluki-2.0"
+poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=main"
 ```
-
-This avoids legacy-branch layout mismatches.
 
 ---
 

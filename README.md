@@ -33,11 +33,11 @@ A modular PyTorch framework for training language models on biological sequences
 ```bash
 git clone https://github.com/dieterich-lab/biolm_utils.git
 cd biolm_utils
-git checkout biolm-2.0
+git checkout main
 ./install.sh
 ```
 
-BioLM 2.0 development happens on the `biolm-2.0` branch—`main` is the legacy line, so always install from `biolm-2.0` for the latest features and fixed plugin hooks.
+BioLM development happens on the `main` branch.
 
 `install.sh` installs only the BioLM framework. Plugins are installed separately (see below).
 
@@ -53,10 +53,10 @@ BioLM 2.0 development happens on the `biolm-2.0` branch—`main` is the legacy l
   poetry run biolm list-plugins
   ```
 
-  For Saluki 2.0 specifically, install from the active branch:
+  For Saluki specifically, install from the active branch:
 
   ```bash
-  poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=saluki-2.0"
+  poetry run biolm install-plugin "https://github.com/dieterich-lab/rna_saluki_cnn.git?ref=main"
   ```
 
   What `install-plugin` does:
