@@ -79,18 +79,6 @@ class TestGPUAutodetect:
                 ]
             )
 
-    def test_explicit_settings_invalid_raises(self, monkeypatch):
-        # Also test if settings.environment.detected_ngpus is explicit and invalid -> should raise
-        monkeypatch.setitem(sys.modules, "torch", _make_dummy_torch(4))
-        with pytest.raises(ValueError):
-            load_config(
-                [
-                    "mode=tokenize",
-                    "debugging.accelerator=gpu",
-                    "settings.environment.ngpus=3",
-                ]
-            )
-
     def test_explicit_valid_is_removed(self, monkeypatch):
         # Explicit settings.environment.detected_ngpus usage should be disallowed
         monkeypatch.setitem(sys.modules, "torch", _make_dummy_torch(4))

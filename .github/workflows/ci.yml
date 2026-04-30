@@ -38,7 +38,12 @@ jobs:
       - name: Run test suite
         run: |
           export PATH="$HOME/.local/bin:$PATH"
-          poetry run pytest -q tests --ignore=tests/integration/test_plugin_discovery.py
+          poetry run pytest -q tests \
+            --ignore=tests/integration/test_plugin_discovery.py \
+            --ignore=tests/test_hydra_config_smoke.py \
+            --ignore=tests/test_mlflow_integration.py \
+            --ignore=tests/test_runner_mlflow.py \
+            --ignore=tests/test_mlflow_smoke.py
       - name: Run Hydra configuration smoke tests
         run: |
           export PATH="$HOME/.local/bin:$PATH"
