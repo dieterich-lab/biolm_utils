@@ -70,6 +70,7 @@ def test_minimal_training_loop(tmp_path):
         remove_unused_columns=False,
         metric_for_best_model="mse",
         load_best_model_at_end=True,
+        report_to=[],
     )
     # Ensure Trainer recognizes label column name for evaluation
     targs.label_names = ["labels"]
