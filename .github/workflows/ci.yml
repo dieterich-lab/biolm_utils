@@ -88,7 +88,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: dieterich-lab/rna_protein_xlnet
-          ref: main
+          ref: xlnet-2.0
           path: rna_protein_xlnet
       - uses: actions/setup-python@v4
         with:
