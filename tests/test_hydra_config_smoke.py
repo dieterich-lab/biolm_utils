@@ -12,7 +12,6 @@ import importlib.util
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -120,13 +119,13 @@ def test_hydra_config_all_modes():
                 ]
                 if mode in ["fine-tune", "predict", "interpret"]
                 else [
-                sys.executable,
-                "-m",
-                "biolm.cli",
-                f"mode={mode}",
-                "plugin=saluki",
-                "--cfg",
-                "job",
+                    sys.executable,
+                    "-m",
+                    "biolm.cli",
+                    f"mode={mode}",
+                    "plugin=saluki",
+                    "--cfg",
+                    "job",
                 ]
             ),
             capture_output=True,
@@ -166,8 +165,7 @@ def test_hydra_config_with_custom_values():
 def test_hydra_config_file_override(tmp_path):
     """Test that configuration files work with Hydra."""
     config_file = tmp_path / "test_config.yaml"
-    config_file.write_text(
-        """
+    config_file.write_text("""
 mode: fine-tune
 plugin: saluki
 task: classification
@@ -175,8 +173,7 @@ outputpath: /tmp/test_output
 training:
   nepochs: 3
   batchsize: 4
-"""
-    )
+""")
 
     result = subprocess.run(
         [

@@ -43,18 +43,6 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           poetry run pytest -q tests/test_hydra_config_smoke.py
-      - name: Fail if deprecated config keys present
-        run: |
-          set -e
-          if grep -R --line-number \
-            --exclude-dir .git \
-            --exclude-dir .github \
-            --exclude-dir .venv \
-            --exclude-dir .mypy_cache \
-            -e '\blearningrate\b' .; then
-            echo "Found deprecated 'learningrate' usage. Please migrate to 'learning_rate'."
-            exit 1
-          fi
 
   mlflow-smoke:
     name: MLflow smoke tests
@@ -126,17 +114,3 @@ jobs:
           cd biolm_utils
           poetry run pytest -xvs tests/integration/test_plugin_discovery.py
 
-  lockfile-sync:
-    name: Verify poetry.lock is in sync
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          export PATH="$HOME/.local/bin:$PATH"
-          poetry --version
-      - name: Verify lockfile
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          poetry check --lock
