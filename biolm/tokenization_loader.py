@@ -4,8 +4,37 @@ import json
 import logging
 import tempfile
 from pathlib import Path
+import shutil
 
 logger = logging.getLogger(__name__)
+
+
+def inject_data_source_config_into_tokenizer(tokenizer_json_dict, args):
+    """
+    Injects dynamic parsing configuration (like column separator, seqpos, and token separator)
+    into the JSON configuration of a loaded tokenizer.
+    """
+    col = getattr(getattr(args, "data_source", None), "columnsep", "\t")
+    seqpos_value = getattr(getattr(args, "data_source", None), "seqpos", None)
+    if seqpos_value is None:
+        seqpos_value = 1
+        
+    if "pre_tokenizer" in tokenizer_json_dict and "pretokenizers" in tokenizer_json_dict["pre_tokenizer"]:
+        if len(tokenizer_json_dict["pre_tokenizer"]["pretokenizers"]) > 2:
+            tokenizer_json_dict["pre_tokenizer"]["pretokenizers"][1]["pattern"]["Regex"] = f"^([^{col}]*{col}){{{int(seqpos_value) - 1}}}"
+            tokenizer_json_dict["pre_tokenizer"]["pretokenizers"][2]["pattern"]["Regex"] = f"{col}.*"
+            
+    tokensep = getattr(getattr(args, "data_source", None), "tokensep", None)
+    if tokensep is not None and "normalizer" in tokenizer_json_dict and "normalizers" in tokenizer_json_dict["normalizer"]:
+        num_elements = len(tokenizer_json_dict["normalizer"]["normalizers"])
+        if num_elements > 1:
+            tokenizer_json_dict["normalizer"]["normalizers"][-2]["pattern"]["String"] = tokensep
+        else:
+            encoding = getattr(getattr(args, "tokenization", None), "encoding", "atomic")
+            replacement = "" if encoding == "bpe" else " "
+            pattern = {"type": "Replace", "pattern": {"String": tokensep}, "content": replacement}
+            tokenizer_json_dict["normalizer"]["normalizers"].insert(0, pattern)
+
 
 
 def get_tokenizer(args, tokenizer_file: Path, tokenizer_cls, pretraining_required):
@@ -34,36 +63,8 @@ def get_tokenizer(args, tokenizer_file: Path, tokenizer_cls, pretraining_require
         )
         with open(tokenizer_file, "r") as f:
             tokenizer_json = json.load(f)
-        col = getattr(getattr(args, "data_source", None), "columnsep", "\t")
-        seqpos_value = getattr(getattr(args, "data_source", None), "seqpos", None)
-        if seqpos_value is None:
-            seqpos_value = 1
-        tokenizer_json["pre_tokenizer"]["pretokenizers"][1]["pattern"][
-            "Regex"
-        ] = f"([^{col}]*{col}){{{int(seqpos_value) - 1}}}"
-        tokenizer_json["pre_tokenizer"]["pretokenizers"][2]["pattern"][
-            "Regex"
-        ] = f"{col}.*"
-        tokensep = getattr(getattr(args, "data_source", None), "tokensep", None)
-        if tokensep is not None:
-            num_elements = len(tokenizer_json["normalizer"]["normalizers"])
-            if num_elements > 1:
-                tokenizer_json["normalizer"]["normalizers"][-2]["pattern"][
-                    "String"
-                ] = tokensep
-            else:
-                encoding = getattr(
-                    getattr(args, "tokenization", None), "encoding", "atomic"
-                )
-                replacement = "" if encoding == "bpe" else " "
-                pattern = (
-                    {
-                        "type": "Replace",
-                        "pattern": {"String": tokensep},
-                        "content": replacement,
-                    },
-                )
-                tokenizer_json["normalizer"]["normalizers"].insert(0, pattern)
+            
+        inject_data_source_config_into_tokenizer(tokenizer_json, args)
         with tempfile.NamedTemporaryFile("r+") as tmp:
             json.dump(tokenizer_json, tmp)
             tmp.seek(0)
@@ -106,46 +107,63 @@ def get_tokenizer(args, tokenizer_file: Path, tokenizer_cls, pretraining_require
             ),
         }
 
-        try:
-            tokenizer = tokenizer_cls.from_pretrained(
-                str(tokenizer_dir),
-                **tokenizer_kwargs,
-            )
-        except (TypeError, OSError, FileNotFoundError) as exc:
-            logger.warning(
-                "Tokenizer %s couldn't be loaded via from_pretrained: %s",
-                tokenizer_cls.__name__,
-                exc,
-            )
-            tokenizer_json = tokenizer_dir / "tokenizer.json"
-            if not tokenizer_json.exists():
-                raise
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir_path = Path(tmpdir)
+            if tokenizer_dir.exists():
+                for item in tokenizer_dir.iterdir():
+                    if item.is_file():
+                        shutil.copy2(item, tmpdir_path)
+            
+            tmp_tokenizer_json = tmpdir_path / "tokenizer.json"
+            if tmp_tokenizer_json.exists():
+                with open(tmp_tokenizer_json, "r") as f:
+                    tokenizer_json_dict = json.load(f)
+                    
+                inject_data_source_config_into_tokenizer(tokenizer_json_dict, args)
+                        
+                with open(tmp_tokenizer_json, "w") as f:
+                    json.dump(tokenizer_json_dict, f)
 
-            tokenizer_config_json = tokenizer_dir / "tokenizer_config.json"
-            config_overrides = {}
-            if tokenizer_config_json.exists():
-                with open(tokenizer_config_json, "r") as cfg:
-                    tok_config = json.load(cfg)
-                for key in [
-                    "cls_token",
-                    "unk_token",
-                    "mask_token",
-                    "pad_token",
-                    "sep_token",
-                    "bos_token",
-                    "eos_token",
-                    "model_max_length",
-                    "truncation_side",
-                ]:
-                    if key in tok_config:
-                        config_overrides[key] = tok_config[key]
+            try:
+                tokenizer = tokenizer_cls.from_pretrained(
+                    str(tmpdir_path),
+                    **tokenizer_kwargs,
+                )
+            except (TypeError, OSError, FileNotFoundError) as exc:
+                logger.warning(
+                    "Tokenizer %s couldn't be loaded via from_pretrained: %s",
+                    tokenizer_cls.__name__,
+                    exc,
+                )
+                tokenizer_json = tmpdir_path / "tokenizer.json"
+                if not tokenizer_json.exists():
+                    raise
 
-            tokenizer = tokenizer_cls(
-                tokenizer_file=str(tokenizer_json),
-                **{**tokenizer_kwargs, **config_overrides},
-            )
-            logger.warning(
-                "Loaded tokenizer directly from %s due to %s", tokenizer_json, exc
-            )
-    tokenizer.name_or_path = tokenizer_file
+                tokenizer_config_json = tmpdir_path / "tokenizer_config.json"
+                config_overrides = {}
+                if tokenizer_config_json.exists():
+                    with open(tokenizer_config_json, "r") as cfg:
+                        tok_config = json.load(cfg)
+                    for key in [
+                        "cls_token",
+                        "unk_token",
+                        "mask_token",
+                        "pad_token",
+                        "sep_token",
+                        "bos_token",
+                        "eos_token",
+                        "model_max_length",
+                        "truncation_side",
+                    ]:
+                        if key in tok_config:
+                            config_overrides[key] = tok_config[key]
+
+                tokenizer = tokenizer_cls(
+                    tokenizer_file=str(tokenizer_json),
+                    **{**tokenizer_kwargs, **config_overrides},
+                )
+                logger.warning(
+                    "Loaded tokenizer directly from %s due to %s", tokenizer_json, exc
+                )
+        tokenizer.name_or_path = tokenizer_file
     return tokenizer

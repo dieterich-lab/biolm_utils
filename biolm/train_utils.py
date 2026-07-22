@@ -97,10 +97,25 @@ def get_dataset(args, tokenizer, add_special_tokens, dataset_file, dataset_cls):
     current_blocksize = getattr(getattr(args, "training", None), "blocksize", None)
     source_hash = _compute_source_hash(args)
     metadata_file = dataset_file.with_suffix(".metadata.json")
-    if dataset_file.exists():
+    
+    # Extract current parsing configuration to compare against cache
+    ds = getattr(args, "data_source", None)
+    current_config = {
+        "seqpos": getattr(ds, "seqpos", None),
+        "idpos": getattr(ds, "idpos", None),
+        "labelpos": getattr(ds, "labelpos", None),
+        "columnsep": getattr(ds, "columnsep", None),
+    }
+    force_recreate = getattr(getattr(args, "debugging", None), "forcenewdata", False)
+
+    if dataset_file.exists() and not force_recreate:
         logger.info(f"Loading dataset from {dataset_file}")
         metadata = _load_metadata(metadata_file)
         cached_hash = metadata.get("source_hash")
+        cached_config = metadata.get("config", {})
+
+        config_changed = any(cached_config.get(k) != v for k, v in current_config.items())
+
         if cached_hash is None:
             logger.info("No dataset metadata hash found; forcing recreation.")
             dataset_file.unlink(missing_ok=True)
@@ -111,6 +126,10 @@ def get_dataset(args, tokenizer, add_special_tokens, dataset_file, dataset_cls):
                 cached_hash,
                 source_hash,
             )
+            dataset_file.unlink(missing_ok=True)
+            metadata_file.unlink(missing_ok=True)
+        elif config_changed:
+            logger.info("Dataset parsing configuration changed; recreating dataset.")
             dataset_file.unlink(missing_ok=True)
             metadata_file.unlink(missing_ok=True)
         else:
@@ -143,6 +162,7 @@ def get_dataset(args, tokenizer, add_special_tokens, dataset_file, dataset_cls):
         metadata = {
             "scaling_method": dataset.scaling_method,
             "source_hash": source_hash,
+            "config": current_config,
         }
         with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f)

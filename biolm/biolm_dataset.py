@@ -173,17 +173,31 @@ class BioLMDataset(Dataset):
     def _encode_sequences(
         self, seqs: Sequence[str], add_special_tokens: bool
     ) -> np.ndarray:
-        encodings = self.tokenizer(
-            seqs,
-            add_special_tokens=add_special_tokens,
-            truncation=True,
-            padding="max_length",
-            max_length=self.max_len,
-        )["input_ids"]
+        batch_size = 1000
+        encodings = []
+        for i in range(0, len(seqs), batch_size):
+            batch_seqs = seqs[i : i + batch_size]
+            batch_encodings = self.tokenizer(
+                batch_seqs,
+                add_special_tokens=add_special_tokens,
+                truncation=True,
+                padding="max_length",
+                max_length=self.max_len,
+            )["input_ids"]
+            for e in batch_encodings:
+                arr = np.asarray(e, dtype=np.int32)
+                cur_len = arr.shape[0]
+                if cur_len != self.max_len:
+                    need = self.max_len - cur_len
+                    if need > 0:
+                        new_arr = np.full((self.max_len,), int(self.tokenizer.pad_token_id), dtype=np.int32)
+                        new_arr[:cur_len] = arr
+                        arr = new_arr
+                    else:
+                        arr = arr[:self.max_len]
+                encodings.append({"input_ids": arr})
         logging.info("Encoding sequences finished.")
-        if any(len(e) != self.max_len for e in encodings):
-            encodings = self._pad_truncate(encodings, self.max_len)
-        return np.array([{"input_ids": ids} for ids in encodings])
+        return np.array(encodings)
 
     def _initialize_scaler(self, scaler: Optional[Any]) -> Any:
         if scaler is not None:
@@ -191,16 +205,25 @@ class BioLMDataset(Dataset):
         return self._make_scaler(self.scaling_method)
 
     def _pretokenize_sequences(self, normalized_lines: Sequence[str]) -> List[str]:
-        pre_tokenized = self._maybe_parallel_map(
-            self.tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str,
-            normalized_lines,
-            stage="pretokenize",
-        )
+        workers = self._dataset_num_workers()
+
+        def process_line(line: str) -> str:
+            pre_toks = self.tokenizer.backend_tokenizer.pre_tokenizer.pre_tokenize_str(line)
+            return self.join_str.join([y[0] for y in pre_toks]).replace("Ġ", "")
+
+        if workers <= 1:
+            return [process_line(line) for line in normalized_lines]
+
+        logging.info("Dataset preprocessing (pretokenize) using %s workers in chunks", workers)
+        results = []
+        chunk_size = 5000
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            for i in range(0, len(normalized_lines), chunk_size):
+                chunk = normalized_lines[i : i + chunk_size]
+                chunk_results = list(ex.map(process_line, chunk))
+                results.extend(chunk_results)
         logging.info("Pre-tokenizing sequences finished.")
-        return [
-            self.join_str.join([y[0] for y in x]).replace("Ġ", "")
-            for x in pre_tokenized
-        ]
+        return results
 
     def _tokenize_raw_strings(self, seqs: Sequence[str]) -> List[List[str]]:
         log_lvl = transformers.utils.logging.get_verbosity()
@@ -397,6 +420,8 @@ class BioLMDataset(Dataset):
     def _maybe_attach_labels(self) -> None:
         mode = getattr(self.args, "mode", None)
         labelpos = self._ds_get("labelpos", getattr(self.args, "labelpos", None))
+        print("-"*100, flush=True)
+        print(self.args, flush=True)
         weightpos = getattr(self.args, "weightpos", None)
         if mode not in ["fine-tune", "predict", "interpret"] or labelpos is None:
             return

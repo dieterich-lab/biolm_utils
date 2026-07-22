@@ -31,6 +31,10 @@ def _process_hydra_config(cfg: DictConfig) -> BioLMConfig:
     """
     from omegaconf import OmegaConf
 
+    # Backward compatibility: allow legacy `model=` CLI overrides to select plugins.
+    if cfg.get("model") and isinstance(cfg.get("model"), str) and not cfg.get("plugin"):
+        cfg.plugin = cfg.get("model")
+
     cfg = merge_plugin_defaults(cfg)
 
     config_dict = OmegaConf.to_container(cfg, resolve=True)
@@ -47,11 +51,6 @@ def _process_hydra_config(cfg: DictConfig) -> BioLMConfig:
         raise ValueError(
             "'learning_rate' is fixed by the selected plugin and cannot be set via Hydra config."
         )
-
-    # Backward compatibility: allow legacy `model=` CLI overrides to select plugins.
-    model_value = config_dict.get("model")
-    if isinstance(model_value, str) and model_value and not config_dict.get("plugin"):
-        config_dict["plugin"] = model_value
 
     # Validate that task is provided for modes that require it
     if "mode" in config_dict:
