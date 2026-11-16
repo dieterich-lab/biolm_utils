@@ -25,6 +25,26 @@ from .paths import Paths
 logger = logging.getLogger(__name__)
 
 
+def _log_split_summary(results: List[Any], res_type: str) -> None:
+    """Log mean and std of the per-split metrics.
+
+    run_once_fn returns one ``{"metric": value}`` dict per split (see
+    runner._train/_test); plain numbers are accepted as well.
+    """
+    values = []
+    for res in results:
+        value = res.get("metric") if isinstance(res, dict) else res
+        if isinstance(value, (int, float, np.number)):
+            values.append(float(value))
+    if not values:
+        logger.info(f"No numeric {res_type} results to summarize: {results}")
+        return
+    logger.info(
+        f"Mean {res_type} results from {len(values)} splits: {np.mean(values)}, "
+        f"Std: {np.std(values)} (per split: {values})"
+    )
+
+
 class CrossValidator:
     """Orchestrates runs over train/val/test splits and modes.
 
@@ -266,9 +286,7 @@ class CrossValidator:
             results.append(res)
         if self.params.mode != "interpret":
             res_type = "validation" if not test_ds else "test"
-            logger.info(
-                f"Mean {res_type} results from {len(results)} splits: {np.mean(results)}, Std: {np.std(results)}"
-            )
+            _log_split_summary(results, res_type)
         return results
 
     def _run_predefined_splits(self):
@@ -328,9 +346,7 @@ class CrossValidator:
             results.append(res)
         if self.params.mode != "interpret":
             res_type = "validation" if not test_ds else "test"
-            logger.info(
-                f"Mean {res_type} results from {len(results)} splits: {np.mean(results)}, Std: {np.std(results)}"
-            )
+            _log_split_summary(results, res_type)
         return results
 
     def _run_predefined_no_cv(self):
